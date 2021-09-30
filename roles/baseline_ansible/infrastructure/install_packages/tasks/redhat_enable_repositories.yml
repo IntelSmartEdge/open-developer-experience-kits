@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: dependency analysis
+  block:
+    - name: set temp_epel_enabled
+      set_fact: temp_epel_enabled="{{ epel_repository_enabled or ius_repository_enabled or powertools_repository_enabled }}"
+    - name: set temp_codeready_enabled
+      set_fact: temp_codeready_enabled="{{ codeready_linux_builder_repository_enabled or temp_epel_enabled }}"
+
+- name: Install CodeReady Linux Builder repository
+  become: true
+  rhsm_repository:
+    name: codeready-builder-for-rhel-8-x86_64-rpms
+  when:
+    - ansible_distribution_version >= '8'
+    - ansible_distribution == "RedHat"
+    - temp_codeready_enabled
+
+- name: Install epel repository
+  include_tasks: redhat_epel_repository.yml
+  when:
+    - temp_epel_enabled
+
+- name: Install IUS repository
+  package:
+    name: https://repo.ius.io/ius-release-el7.rpm
+    state: present
+  become: true
+  when:
+    - not offline_enable | default(false)
+    - ansible_distribution_version < '8'
+    - ius_repository_enabled
+
+- name: Install PowerTools repository
+  include_tasks: redhat_powertools_repository.yml
+  when:
+    - powertools_repository_enabled
+
+- name: Install elrepo repository
+  include_tasks: redhat_elrepo_repository.yml
+  when:
+    - elrepo_repository_enabled
+
+- name: get full distribution versions
+  command: cat /etc/redhat-release
+  register: release
+  changed_when: false
+
+- name: set full distribution version RHEL
+  set_fact:
+    full_dist_version: "{{ release.stdout | regex_replace('.*(\\d+.\\d+).*', '\\1') }}"
+  when:
+    - ansible_distribution == "RedHat"
+
+- name: CentOS handling
+  block:
+    - name: set full distribution version CentOS
+      set_fact:
+        full_dist_version: "{{ release.stdout | regex_replace('.*(\\d+.\\d+.\\d\\d\\d\\d).*', '\\1') }}"
+
+    - name: get latest CentOS release
+      shell: set -o pipefail && wget -qO- http://mirror.centos.org/centos/8/BaseOS/x86_64/os/repodata/repomd.xml | grep revision | cut -f2 -d'>' | cut -f1 -d'<'
+      register: latest_release
+      changed_when: false
+
+    - name: set latest CentOS release fact
+      set_fact:
+        latest_centos_release: "{{ latest_release.stdout }}"
+
+    - name: Configure CentOS Vault repository
+      include_tasks: redhat_centos_vault_repository.yml
+      when:
+        - centos_vault_repository_enabled
+  when:
+    - ansible_distribution == "CentOS"

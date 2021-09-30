@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+- name: open calico ports
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports: "{{ calico_open_ports }}"
+
+# Starting with calico v3.16 the CNI is adding an accept rule at the end of FORWARD chain in filter table:
+# "Connections to services without endpoints are now properly rejected in iptables dataplane mode.
+#  The fix required moving the iptables ACCEPT rule to the end of the filter FORWARD chain;
+#  if you have your own rules in that chain then please check that they do not drop or reject pod traffic before it reaches the ACCEPT rule.
+#  felix #2424 (@caseydavenport)" ~ https://docs.projectcalico.org/release-notes/
+# This is not acceptable as prior to that the firewall adds REJECT all rule:
+#   Chain FORWARD (policy ACCEPT)
+#   target     prot opt source               destination
+#   ...
+#   DROP       all  --  anywhere             anywhere             ctstate INVALID
+#   REJECT     all  --  anywhere             anywhere             reject-with icmp-host-prohibited
+#   ACCEPT     all  --  anywhere             anywhere             /* cali:S93hcgKJrXEqnTfs */ /* Policy explicitly accepted packet. */ mark match 0x10000/0x10000  # noqa line-length
+# The workaround is to add a direct accept rule that is the same as the one created by calico.
+# By default the value created by https://github.com/projectcalico/felix/blob/29a934e2af1d6670d0c85cae7a844cef8eb4df93/dataplane/driver.go#L98
+# is always 0x10000 as the default value of allowedMarkBits/configParams.IptablesMarkMask is 0xffff0000 and it is the first bit available
+- name: add firewall rule for calico
+  command: "{{ item }}"
+  with_items:
+    - firewall-cmd --direct --permanent --add-rule ipv4 filter FORWARD 0 -m mark --mark 0x10000/0x10000 -m comment --comment "SmartEdge-Calico" -j ACCEPT
+    - firewall-cmd --reload
+  changed_when: true
+  become: true
+  when: ansible_os_family == "RedHat"
+
+# Due to the fact that the NFTables is used as IPTables backend in RedHat 8, the firewalld performs
+# additional packet filtering (in a 'inet firewalld filter_FORWARD' chain) on top of the calico
+# filtering (in a 'ip filter cali-FORWARD' chain).
+# The calico filtering is performed earlier in the same 'forward' hook so if a packet is accepted by
+# calico then we can accept it explicitly in firewalld.
+- name: accept calico packets in firewalld
+  command: "{{ item }}"
+  with_items:
+    - "firewall-cmd --permanent --zone=trusted --add-source={{ calico_cidr }}"
+    - "firewall-cmd --reload"
+  changed_when: true
+  become: true
+  when:
+    - ansible_os_family == "RedHat"
+    - ansible_distribution_version >= '8'

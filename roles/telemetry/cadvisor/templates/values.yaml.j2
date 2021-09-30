@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+# Common values
+namespace: telemetry
+pullPolicy: IfNotPresent
+component: cadvisor
+projectDir: "{{ project_dir }}"
+
+# cAdvisor Values
+cadvisor:
+  image: gcr.io/cadvisor/cadvisor:v0.40.0
+  name: cadvisor
+  resources:
+    requests:
+      cpu: "0.1"
+    limits:
+      cpu: "1"
+      memory: "2Gi"
+  disabledMetrics: "percpu,diskIO,tcp,udp,disk,sched"
+  storeContainerLabels: false
+  maxHousekeepingInterval: "30s"
+  dockerOnly: true
+
+# Proxy Values
+proxy:
+  metricsCadvisorPort: 9105
+  internalCadvisorPort: 9106
+  serverName: "{{ _proxy_server_name }}"
+  name: cadvisor-proxy
+  certsDest: /root/certs/cadvisor/
+  image: nginx:alpine
+  pathToNginxCfg: /etc/nginx/nginx.conf
+  configMap: cadvisor-proxy-config
+  protocols: TLSv1.2 TLSv1.3
+  secretName: "{{ _proxy_secret_name }}"
+  ciphers:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-ECDSA-AES256-GCM-SHA384"

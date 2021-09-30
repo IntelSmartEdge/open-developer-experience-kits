@@ -1,0 +1,13 @@
+{
+  "proxies": {
+    "default": {
+{% if "http_proxy" in proxy_env and proxy_env["http_proxy"] | length %}
+        "httpProxy": "{{ proxy_env["http_proxy"] }}",
+{% endif %}
+{% if "https_proxy" in proxy_env and proxy_env["https_proxy"] | length %}
+        "httpsProxy": "{{ proxy_env["https_proxy"] }}",
+{% endif %}
+        "noProxy": "{{ ansible_host }},{{ proxy_env["no_proxy"] }}"
+    }
+  }
+}

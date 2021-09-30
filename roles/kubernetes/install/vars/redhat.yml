@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+_kubernetes_repository_url: "https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64"
+_kubernetes_repository_keys:
+  - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+  - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+_kubernetes_ver_separator: "-"
+_kubernetes_ver_suffix: ""

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: update grub.cfg
+  command: update-grub
+  changed_when: true
+  become: true
+  when:
+    - ansible_os_family == "Debian"
+  notify:
+    - reboot server

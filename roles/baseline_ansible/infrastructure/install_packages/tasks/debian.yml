@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: reconfigure unattended-upgrades package
+  become: true
+  command: dpkg-reconfigure --priority=low unattended-upgrades
+  args:
+    creates: "/etc/apt/apt.conf.d/20auto-upgrades"
+
+- name: disable automatic package updates
+  become: true
+  replace:
+    path: "{{ item }}"
+    regexp: "(APT::Periodic::.* )\"1\";$"
+    replace: "\\1\"0\";"
+    mode: 0600
+  with_items:
+    - "/etc/apt/apt.conf.d/20auto-upgrades"
+    - "/etc/apt/apt.conf.d/10periodic"
+
+- name: ensure that main, restricted, universe and multiverse repositories are enabled
+  become: true
+  apt_repository:
+    repo: "{{ item }}"
+  with_items:
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main universe"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main restricted"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates main restricted"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates universe"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates multiverse"
+    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-backports main restricted universe multiverse"
+    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security main restricted"
+    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security universe"
+    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security multiverse"

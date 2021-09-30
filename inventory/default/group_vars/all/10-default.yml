@@ -1,0 +1,238 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+# This file contains variables intended to be configured by user.
+# It allows feature enabling and configuration.
+# Per-host variables should be places in `inventory/default/host_vars` directory.
+# Features should not be configured by changing roles' defaults (i.e. role/defaults/main.yml)
+
+##################################################
+##### User settings
+
+### Proxy settings
+proxy_env:
+  # Proxy URLs to be used for HTTP, HTTPS and FTP
+  http_proxy: ""
+  https_proxy: ""
+  ftp_proxy: ""
+  # No proxy setting contains addresses and networks that should not be accessed using proxy (e.g. local network, Kubernetes CNI networks)
+  no_proxy: ""
+
+# Proxy for be used by GIT HTTP - required if GIT HTTP via proxy
+git_http_proxy: "{{ proxy_env['http_proxy'] | default('') }}"
+
+# Disable YUM plugins (e.g. Fastest Mirror)
+os_remove_yum_plugins: true
+
+##################################################
+
+### Network Time Protocol (NTP)
+# Enable machine's time synchronization with NTP server
+ntp_enable: false
+# Servers to be used by NTP instead of the default ones (e.g. 0.centos.pool.ntp.org)
+ntp_servers: []
+
+### Kernel, grub & tuned configuration
+# Kernel, grub & tuned configurations are machine-type specific:
+# - Edge Nodes - edit `inventory/default/group_vars/edgenode_group/10-default.yml`
+# - Edge Controller - edit `inventory/default/group_vars/controller_group/10-default.yml`
+# To provide configuration for specific machine, place the settings in `inventory/default/host_vars/_inventory_host_name.yml`
+
+# Default grub parameters
+default_grub_params: "intel_iommu=on iommu=pt"
+
+### Retry settings for network-based tasks
+# - number_of_retries - configures how many times failed task should be retried
+# - retry_delay - configures delay between retries (in seconds)
+number_of_retries: 10
+retry_delay: 5
+
+# - allowed_number_of_k8s_retries - configures how many Kubernetes failures are allowed
+allowed_number_of_k8s_retries: 10
+
+### Network Edge's Kubernetes CNIs
+# List of requested CNIs to be used in Network Edge mode
+# CNIs are applied in order of definition
+# Multus CNI is implicit - it will be applied as 2nd one if list contains more than 1
+# Available CNIs:
+# - calico (note: if the calico CNI is used, then it must be main/primary CNI, i.e. first on the list)
+kubernetes_cnis:
+  - calico
+
+# Calico's CIDR (will be included automatically to noproxy when calico is included in kubernetes_cnis)
+calico_cidr: "10.245.0.0/16"
+
+## SR-IOV Network Operator
+sriov_network_operator_enable: true
+
+## SR-IOV Network Operator configuration
+sriov_network_operator_configure_enable: true
+
+cvl_sriov_nics:
+  c0p0: "eno12399"
+  c0p1: "eno12409"
+  c1p0: "ens5f0"
+  c1p1: "ens5f1"
+
+# SriovNetworkNodePolicies list
+sriov_network_node_policies:
+  - name: "sriov-netdev-net-c0p0"
+    resource_name: "sriov_netdev_net_c0p0"
+    num_vfs: 4
+    priority: 99
+    vendor: 8086
+    pf_names: ["{{ cvl_sriov_nics.c0p0 }}"]
+    device_type: netdevice
+  - name: "sriov-vfio-pci-net-c0p1"
+    resource_name: "sriov_vfiopci_net_c0p1"
+    num_vfs: 4
+    priority: 99
+    vendor: 8086
+    pf_names: ["{{ cvl_sriov_nics.c0p1 }}"]
+    device_type: vfio-pci
+  - name: "sriov-netdev-net-c1p0"
+    resource_name: "sriov_netdev_net_c1p0"
+    num_vfs: 4
+    priority: 99
+    vendor: 8086
+    pf_names: ["{{ cvl_sriov_nics.c1p0 }}"]
+    device_type: netdevice
+  - name: "sriov-vfio-pci-net-c1p1"
+    resource_name: "sriov_vfiopci_net_c1p1"
+    num_vfs: 4
+    priority: 99
+    vendor: 8086
+    pf_names: ["{{ cvl_sriov_nics.c1p1 }}"]
+    device_type: vfio-pci
+
+# SriovNetworks list
+sriov_networks:
+  - name: sriov-netdev-network-c0p0
+    network_namespace: smartedge-apps
+    ipam: |-
+      {
+      "type": "host-local",
+      "subnet": "10.10.10.0/24",
+      "rangeStart": "10.10.10.10",
+      "rangeEnd": "10.10.10.41",
+      "routes": [{
+        "dst": "0.0.0.0/0"
+      }],
+      "gateway": "10.10.10.1"
+      }
+    vlan: 0
+    resource_name: sriov_netdev_net_c0p0
+    link_state: enable
+  - name:  sriov-netdev-network-c1p0
+    network_namespace: smartedge-apps
+    ipam: |-
+      {
+      "type": "host-local",
+      "subnet": "10.10.20.0/24",
+      "rangeStart": "10.10.20.10",
+      "rangeEnd": "10.10.20.41",
+      "routes": [{
+        "dst": "0.0.0.0/0"
+      }],
+      "gateway": "10.10.20.1"
+      }
+    vlan: 1
+    resource_name: sriov_netdev_net_c1p0
+    link_state: enable
+  - name: sriov-vfio-network-c0p1
+    network_namespace: smartedge-apps
+    ipam: |-
+      {}
+    resource_name: sriov_vfiopci_net_c0p1
+    link_state: enable
+  - name: sriov-vfio-network-c1p1
+    network_namespace: smartedge-apps
+    ipam: |-
+      {}
+    resource_name: sriov_vfiopci_net_c1p1
+    link_state: enable
+ 
+## Enable OOT driver installation for E810
+e810_driver_enable: True
+
+### Kubernetes Topology Manager configuration (for worker)
+# CPU settings
+cpu:
+  # CPU policy - possible values: none (disabled), static (default)
+  policy: "static"
+  # Reserved CPUs for K8s and OS daemons - list of reserved CPUs
+  reserved_cpus: "0,1"
+
+# Kubernetes Topology Manager policy - possible values: none (disabled), best-effort (default), restricted, single-numa-node
+topology_manager:
+  policy: "best-effort"
+
+# SmartEdge namespaces
+system_namespace: "smartedge-system"
+application_namespace: "smartedge-apps"
+
+# SmartEdge installation directory
+project_dir: "/opt/smartedge"
+
+# SmartEdge users group
+project_group: "{{ ansible_user }}"
+
+## Network Edge Node Feature Discovery (NFD)
+ne_nfd_enable: true
+
+## Network Edge Helm Charts Storage Default Directory
+ne_helm_charts_default_dir: "{{ project_dir }}/helm-charts"
+
+###############
+## Telemetry
+
+# Telemetry flavor - possible values: common (default), flexran, smartcity, corenetwork
+telemetry_flavor: common
+
+# Grafana
+telemetry_grafana_enable: true
+
+# Prometheus
+telemetry_prometheus_enable: true
+telemetry_prometheus_scrape_interval_seconds: 60
+telemetry_prometheus_retention: 15d
+
+# Prometheus-statsd-exporter
+telemetry_statsd_exporter_enable: true
+telemetry_statsd_exporter_udp_port: 8125
+telemetry_statsd_exporter_tcp_port: 8125
+
+# Collectd
+telemetry_collectd_enable: true
+telemetry_collectd_log_level: "WARNING" # One of: INFO,WARNING,ERROR. Lower log_level will result in increased disk usage
+# CAdvisor
+telemetry_cadvisor_enable: true
+
+###############
+
+## Docker registry mirrors
+## https://docs.docker.com/registry/recipes/mirror/
+# docker_registry_mirrors:
+#   - "https://docker-mirror.example.local"
+
+## Docker insecure registries
+## https://docs.docker.com/registry/insecure/
+# docker_insecure_registries:
+#   - "docker-insecure-mirror.example.local:5000"
+
+## Hyperthreading
+check_hyperthreading: false
+expected_hyperthreading_state: "enabled"
+
+## Persistent volumes root dir, according to system requirements (OF-5350) should be located inside /var/lib/*
+_persistent_volumes_dest: "/var/lib/smartedge/"
+
+## Enable cgroupfs to be used as a cgroup driver instead of systemd.
+cgroupfs_enable: false
+
+# rc.local path
+_rc_local_path: "/etc/rc{{ '.local' if ansible_os_family == 'Debian' else '.d/rc.local' }}"
+
+# Harbor timeout
+harbor_timeout_min: 5

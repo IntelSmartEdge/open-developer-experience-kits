@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+system_namespace: "smartedge-system"
+application_namespace: "smartedge-apps"

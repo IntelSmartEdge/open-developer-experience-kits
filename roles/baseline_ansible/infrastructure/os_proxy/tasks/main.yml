@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# Variable that should be set for this role:
+# - proxy_env:
+#     http_proxy: str
+#     https_proxy: str
+#     ftp_proxy: str
+#     no_proxy: str
+
+- name: set /etc/environment proxy settings
+  lineinfile:
+    path: /etc/environment
+    state: present
+    regexp: '^{{ item.key }}'
+    line: '{{ item.key }}={{ item.value }}'
+    create: true
+    owner: root
+    group: root
+    mode: 0644
+  with_dict: "{{ proxy_env | default({}) }}"
+  become: true
+  when: >
+    "http_proxy" in proxy_env or
+    "https_proxy" in proxy_env or
+    "ftp_proxy" in proxy_env

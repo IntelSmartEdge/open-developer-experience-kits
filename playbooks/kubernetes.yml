@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+
+# Playbook for Network Edge deployment
+- hosts: controller_group
+  any_errors_fatal: true
+
+  pre_tasks:
+  - name: update controller repo path
+    set_fact:
+      _git_repo_dest: "{{ project_dir }}/edgeservices/edgecontroller"
+
+  roles:
+
+    - role: kubernetes/install
+    - role: kubernetes/customize_kubelet
+    - role: kubernetes/controlplane
+    - role: kubernetes/helm
+    - role: kubernetes/harbor_registry/controlplane
+    - role: kubernetes/cni
+    - role: kubernetes/default_netpol
+    - role: kubernetes/create_namespaces
+    - role: kubernetes/nfd
+      when: "ne_nfd_enable | default(True)"
+
+    - role: telemetry/certs
+      when: >
+        telemetry_prometheus_enable | default(True) or
+        telemetry_statsd_exporter_enable | default(True) or
+        telemetry_collectd_enable | default(True) or
+        telemetry_cadvisor_enable | default(True) or
+        telemetry_grafana_enable | default(True)
+
+    - role: telemetry/prometheus
+      when: "telemetry_prometheus_enable | default(True)"
+    - role: telemetry/statsd-exporter
+      when: "telemetry_statsd_exporter_enable | default(True)"
+    - role: telemetry/collectd/controlplane
+      when: "telemetry_collectd_enable | default(True)"
+    - role: telemetry/cadvisor
+      when: "telemetry_cadvisor_enable | default(True)"
+    - role: telemetry/grafana
+      when: "telemetry_grafana_enable | default(True)"
+
+- hosts: edgenode_group
+  any_errors_fatal: true
+  roles:
+    - role: kubernetes/install
+    - role: kubernetes/customize_kubelet
+    - role: kubernetes/node
+    - role: kubernetes/harbor_registry/node
+    - role: kubernetes/cni
+
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/prepare_node
+      reference_host: "{{ groups['controller_group'][0] }}"
+      when: "sriov_network_operator_enable | default(False)"
+
+    - role: telemetry/collectd/node
+      when: "telemetry_collectd_enable | default(True)"
+
+- hosts: controller_group
+  any_errors_fatal: true
+  roles:
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/install
+      when: "sriov_network_operator_enable | default(False)"
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/configure
+      when: "sriov_network_operator_enable and sriov_network_operator_configure_enable | default(False)"

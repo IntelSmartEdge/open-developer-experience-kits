@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+
+- name: check if kubeadm is installed
+  shell: command -v kubeadm >/dev/null 2>&1
+  register: kubeadm_exec
+  failed_when: false
+  changed_when: false
+
+- name: reset kubeadm
+  command: kubeadm reset --force
+  when: kubeadm_exec.rc == 0
+  become: true
+
+- name: remove kubeconfig
+  file:
+    path: /root/.kube/
+    state: absent
+
+- name: remove kubernetes artifacts
+  file:
+    path: /etc/kubernetes
+    state: absent
+  failed_when: false

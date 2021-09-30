@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+install_dependencies:
+  Debian:
+    - build-essential
+    - checkinstall
+    - zlib1g-dev
+  RedHat:
+    - "@Development Tools"
+    - perl-core
+    - zlib-devel

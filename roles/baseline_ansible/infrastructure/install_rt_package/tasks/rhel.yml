@@ -1,0 +1,144 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: Setup for CentOS
+  block:
+    - name: add CentOS7-RT repo
+      template:
+        src: CentOS7-RT.repo
+        dest: /etc/yum.repos.d/CentOS-RT.repo
+        mode: preserve
+      become: true
+      when:
+        - not setup_user_defined_kernel_rt_repo
+        - ansible_distribution_version < '8'
+
+    - name: add CentOS8-RT repo
+      template:
+        src: CentOS8-RT.repo
+        dest: /etc/yum.repos.d/CentOS-RT.repo
+        mode: preserve
+      become: true
+      when:
+        - not setup_user_defined_kernel_rt_repo
+        - not ansible_distribution_version < '8'
+
+    - name: setup CentOS-RT repository
+      include_tasks: setup_repository_centos.yml
+      when: setup_user_defined_kernel_rt_repo
+  when: ansible_distribution == 'CentOS'
+
+- name: add RHEL RT repo
+  command: subscription-manager repos --enable rhel-8-for-x86_64-rt-rpms
+  become: true
+  when: ansible_distribution == 'RedHat'
+
+- name: install RT kernel
+  package:
+    name:
+      - "kernel-rt{{ '-'+rt_kernel_version if rt_kernel_version != '*' else '' }}"
+      - "kernel-rt-devel{{ '-'+rt_kernel_version if rt_kernel_version != '*' else '' }}"
+      - rt-setup
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  become: true
+  notify:
+    - reboot server
+  when:
+    - ansible_os_family == 'RedHat'
+
+- name: install other RT kernel packages on CentOS 7.x
+  package:
+    name:
+      - "kernel-rt-kvm{{ '-'+rt_kernel_version if rt_kernel_version != '*' else '' }}"
+      - rtctl
+      - rt-tests
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  become: true
+  notify:
+    - reboot server
+  when:
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_version < '8'
+
+- name: get available kernel version
+  shell: set -o pipefail && yum --disableexcludes=main list installed | grep "kernel-rt.x86_64" | awk '{ print $2".x86_64"}'
+  args:
+    warn: false
+  register: available_rt_kernel_version
+  changed_when: false
+  when:
+    - rt_kernel_version == '*'
+
+- name: set expected kernel version '*'
+  set_fact:
+    expected_kernel_version: "{{ available_rt_kernel_version.stdout }}"
+  when:
+    - rt_kernel_version == '*'
+
+- name: set expected kernel version
+  set_fact:
+    expected_kernel_version: "{{ rt_kernel_version }}{{ '.x86_64' if not '.x86_64' in rt_kernel_version else '' }}"
+  when:
+    - rt_kernel_version != '*'
+
+- name: get booted kernel version
+  command: uname -r
+  register: booted_kernel_version
+  changed_when: false
+
+- name: update grub
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - booted_kernel_version.stdout not in expected_kernel_version
+
+- name: get saved kernel for next boot
+  shell: set -o pipefail && grub2-editenv list | grep saved_entry | cut -f2 -d'='
+  register: saved_kernel_entry
+  become: true
+  changed_when: false
+
+- name: set grub2 config name
+  shell: "[ -d /sys/firmware/efi ] && echo '/etc/grub2-efi.cfg' || echo '/etc/grub2.cfg'"
+  register: grub2_config_name
+  changed_when: false
+
+- name: select menuentry from grub
+  shell:
+    cmd: set -o pipefail &&
+         grep ^menuentry "{{ grub2_config_name.stdout }}" |
+         cut -d "'" -f2 |
+         grep {{ expected_kernel_version }}
+  register: menu_entry
+  become: true
+  changed_when: false
+
+- name: set default kernel when menuentry is not available
+  command: grubby --set-default /boot/vmlinuz-{{ expected_kernel_version }}
+  become: true
+  changed_when: true
+  when:
+    - menu_entry.stdout | length == 0
+
+- name: set default kernel for next boot
+  command: grub2-set-default "{{ menu_entry.stdout }}"
+  notify:
+    - reboot server
+  become: true
+  when:
+    - menu_entry.stdout | length > 0
+    - saved_kernel_entry.stdout not in menu_entry.stdout
+
+- name: verify grub2 default entry
+  command: grub2-editenv list
+  become: true
+  changed_when: false

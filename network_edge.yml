@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+
+# Common platform setup playbook
+- hosts: edgenode_group:controller_group
+  any_errors_fatal: true
+
+  pre_tasks:
+    - name: set node name
+      set_fact: node_name={{ ansible_nodename | lower }}
+    - name: create helper variable
+      set_fact:
+        single_node_deployment: false
+    - name: check deployment settings
+      include_tasks: "{{ playbook_dir }}/tasks/settings_check_ne.yml"
+    - name: print deployment settings
+      include_tasks: "{{ playbook_dir }}/tasks/print_vars.yml"
+
+- name: Provision target infrastructure
+  import_playbook: playbooks/infrastructure.yml
+
+- name: Provision Kubernetes cluster
+  import_playbook: playbooks/kubernetes.yml

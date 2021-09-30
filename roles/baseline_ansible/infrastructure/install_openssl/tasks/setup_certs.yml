@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Remove existing
+  file:
+    path: "{{ item.openssl_dir }}"
+    state: absent
+  become: true
+  with_items: "{{ openssl_certs_mapping | default([]) }}"
+
+- name: Create a symbolic link
+  file:
+    src: "{{ item.linux_dir }}"
+    dest: "{{ item.openssl_dir }}"
+    owner: "{{ project_user }}"
+    group: "{{ project_group }}"
+    mode: 0755
+    state: link
+  become: true
+  with_items: "{{ openssl_certs_mapping | default([]) }}"

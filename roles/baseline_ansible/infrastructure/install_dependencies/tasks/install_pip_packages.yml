@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install python packages
+  pip:
+    name: "{{ install_python_dependencies }}"
+    state: present
+    extra_args: --ignore-installed
+  register: pip_result
+  retries: "{{ number_of_retries | default(3) }}"
+  until: pip_result is succeeded
+  delay: " {{ retry_delay | default(3) }}"

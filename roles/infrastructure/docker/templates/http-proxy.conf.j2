@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+[Service]
+{% if "http_proxy" in proxy_env and proxy_env["http_proxy"] | length %}
+Environment="HTTP_PROXY={{ proxy_env["http_proxy"] }}"
+{% endif %}
+{% if "https_proxy" in proxy_env and proxy_env["https_proxy"] | length %}
+Environment="HTTPS_PROXY={{ proxy_env["https_proxy"] }}"
+{% endif %}
+{% if "no_proxy" in proxy_env and proxy_env["no_proxy"] | length %}
+Environment="NO_PROXY={{ ansible_host }},{{ proxy_env["no_proxy"] }}"
+{% endif %}

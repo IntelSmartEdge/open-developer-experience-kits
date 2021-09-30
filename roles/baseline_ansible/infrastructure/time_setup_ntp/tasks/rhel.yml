@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: set custom ntp servers
+  block:
+    - name: install dependencies
+      include_role:
+        name: infrastructure/install_dependencies
+
+    - name: temporarily stop chronyd service
+      systemd:
+        name: chronyd
+        enabled: true
+        masked: false
+        state: stopped
+        daemon_reload: true
+      become: true
+
+    - name: disable default servers
+      lineinfile:
+        dest: /etc/chrony.conf
+        regexp: "^NTP=*"
+        state: absent
+      become: true
+
+    - name: prepare values
+      set_fact:
+        ntp_servers_prepared: "{{ ntp_servers | map('regex_replace', '(.*)', 'server \\1 iburst') | join('\n') }}"
+
+    - name: add custom ntp server to chrony config
+      blockinfile:
+        path: /etc/chrony.conf
+        block: |
+          {{ ntp_servers_prepared }}
+      become: true
+
+    - name: enable and start chronyd service
+      systemd:
+        name: chronyd
+        enabled: true
+        masked: false
+        state: restarted
+        daemon_reload: true
+      become: true
+
+    - name: create ntp time set flag
+      file:
+        path: "{{ ntp_time_set }}"
+        state: touch
+        mode: 0644
+  when: (ntp_servers | length) > 0

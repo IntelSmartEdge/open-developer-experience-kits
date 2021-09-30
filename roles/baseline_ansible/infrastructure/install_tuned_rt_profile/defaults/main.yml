@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# tuned_version: "*"
+tuned_version: "2.11.0-10.el7.noarch"
+
+
+tuned_profile_common: realtime
+tuned_profile_centos7: realtime-virtual-host
+
+# Following two isolcpus* params are common with role configure_cpu_isolation
+isolcpus_enabled: true
+isolcpus: "2-3"

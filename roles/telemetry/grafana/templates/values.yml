@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+nodeSelector: {"node-role.kubernetes.io/master": ""}
+
+dashboardsDir: "{{ _grafana_dashboards_conf }}"
+
+tolerations:
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
+image:
+  tag: "8.1.5"
+service:
+  type: NodePort
+  nodePort: 32000
+  targetPort: 3200
+  annotations: {}
+  labels: {}
+  portName: service
+
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: grafana
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  finalizers:
+    - kubernetes.io/pvc-protection
+
+adminUser: admin
+
+sidecar:
+  image:
+    tag: "1.14.1"
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    searchNamespace: true
+
+  datasources:
+    enabled: true
+    label: grafana_datasource
+    searchNamespace: null
+
+extraContainers: |
+  - name: proxy
+    image: nginx:alpine
+    volumeMounts:
+    - name: proxy-config
+      mountPath: /etc/nginx/nginx.conf
+      subPath: nginx.conf
+    - name: certs
+      mountPath: /opt/grafana/certs/
+    securityContext:
+      runAsUser: 0
+      runAsNonRoot: false
+    ports:
+    - name: proxy-web
+      containerPort: 3200
+
+extraContainerVolumes:
+  - name: certs
+    projected:
+        sources:
+          - secret:
+              name: root-ca
+          - secret:
+              name: "{{ _proxy_secret_name }}"
+  - name: proxy-config
+    configMap:
+      name: grafana-configmap
+
+proxy:
+  apiPort: 3200
+  serverName: "{{ _proxy_server_name }}"
+  secretName: "{{ _proxy_secret_name }}"
+  internalPort: 3000
+  configMap: grafana-configmap
+  protocols: TLSv1.2 TLSv1.3
+  ciphers:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-ECDSA-AES256-GCM-SHA384"

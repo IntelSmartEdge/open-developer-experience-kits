@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+- name: Copy tls related files to scripts directory
+  copy:
+    src: "{{ item }}"
+    dest: "{{ project_dir }}/scripts/{{ item }}"
+    mode: a+r,u+rx
+  loop:
+    - "entrypoint_tls.sh"
+    - "tls_pair.sh"

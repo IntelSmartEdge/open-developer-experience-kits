@@ -1,0 +1,130 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: create directory for CA certificate
+  file:
+    name: "{{ _sriov_network_operator_ca_certs_dest }}"
+    mode: "a+r,u+wx"
+    state: directory
+    owner: "{{ project_user }}"
+    group: "{{ project_group  }}"
+
+- name: create root CA certificate
+  command: "./tls_pair.sh sriov-network-operator-selfsigned-ca {{ _sriov_network_operator_ca_certs_dest }}"
+  args:
+    chdir: "{{ project_dir }}/scripts"
+  changed_when: true
+
+- name: check if root CA secret exists
+  command: kubectl get secret root-ca --namespace={{ sriov_network_operator_namespace }}
+  ignore_errors: true
+  register: get_secret_rootca
+  changed_when: true
+
+- name: create secret with root CA
+  shell: >
+    kubectl create secret generic root-ca
+    --from-file={{ _sriov_network_operator_ca_certs_dest }}/key.pem
+    --from-file={{ _sriov_network_operator_ca_certs_dest }}/cert.pem
+    --namespace={{ sriov_network_operator_namespace }}
+  when: get_secret_rootca is failed
+
+- name: check if certificate generator secret exists
+  command: kubectl get secret certgen --namespace={{ sriov_network_operator_namespace }}
+  ignore_errors: true
+  register: get_secret_certgen
+  changed_when: true
+
+- name: check if root CA secret exists
+  shell: >
+    kubectl create secret generic certgen
+    --from-file={{ project_dir }}/scripts/tls_pair.sh
+    --from-file={{ project_dir }}/scripts/entrypoint_tls.sh
+    --namespace={{ sriov_network_operator_namespace }}
+  when: get_secret_certgen is failed
+
+- name: create directory for operator-webhook-service certificates
+  file:
+    name: "{{ _webhook_operator_service_certs_dir }}"
+    state: directory
+    mode: "a+r,u+wx"
+    owner: "{{ project_user }}"
+    group: "{{ project_group  }}"
+
+- name: create symbolic link to root's cert
+  file:
+    src: "{{ _sriov_network_operator_ca_certs_dest }}/cert.pem"
+    dest: "{{ _webhook_operator_service_certs_dir }}/root.pem"
+    state: link
+    owner: "{{ project_user }}"
+    group: "{{ project_group  }}"
+
+- name: create server certificate signed by root CA certificate
+  command: >
+    ./tls_pair.sh operator-webhook-service.sriov-network-operator.svc
+    {{ _webhook_operator_service_certs_dir }} {{ _sriov_network_operator_ca_certs_dest }}
+  args:
+    chdir: "{{ project_dir }}/scripts"
+  changed_when: true
+
+- name: delete symbolic link to root's cert
+  file:
+    path: "{{ _webhook_operator_service_certs_dir }}/root.pem"
+    state: absent
+
+- name: check if operator-webhook-service tls secret exists
+  command: kubectl get secret operator-webhook-service --namespace={{ sriov_network_operator_namespace }}
+  ignore_errors: true
+  register: get_secret_webhook
+  changed_when: true
+
+- name: create TLS secret type for operator-webhook-service
+  shell: >
+    kubectl -n sriov-network-operator create secret tls operator-webhook-service
+    --cert={{ _webhook_operator_service_certs_dir }}/cert.pem
+    --key={{ _webhook_operator_service_certs_dir }}/key.pem
+  when: get_secret_webhook is failed
+
+- name: create directory for network-resources-injector certificates
+  file:
+    name: "{{ _network_resources_injector_certs_dir }}"
+    state: directory
+    mode: "a+r,u+wx"
+    owner: "{{ project_user }}"
+    group: "{{ project_group  }}"
+
+- name: create symbolic link to root's cert
+  file:
+    src: "{{ _sriov_network_operator_ca_certs_dest }}/cert.pem"
+    dest: "{{ _network_resources_injector_certs_dir }}/root.pem"
+    state: link
+    owner: "{{ project_user }}"
+    group: "{{ project_group  }}"
+
+- name: create server certificate signed by root CA certificate
+  command: >
+    ./tls_pair.sh network-resources-injector-service.sriov-network-operator.svc
+    {{ _network_resources_injector_certs_dir }} {{ _sriov_network_operator_ca_certs_dest }}
+  args:
+    chdir: "{{ project_dir }}/scripts"
+  changed_when: true
+
+- name: delete symbolic link to root's cert
+  file:
+    path: "{{ _network_resources_injector_certs_dir }}/root.pem"
+    state: absent
+
+- name: check if network-resources-injector tls secret exists
+  command: kubectl get secret network-resources-injector-secret --namespace={{ sriov_network_operator_namespace }}
+  ignore_errors: true
+  register: get_secret_injector
+  changed_when: true
+
+- name: create TLS secret type for network-resources-injector
+  shell: >
+    kubectl -n sriov-network-operator create secret tls network-resources-injector-secret
+    --cert={{ _network_resources_injector_certs_dir }}/cert.pem
+    --key={{ _network_resources_injector_certs_dir }}/key.pem
+  when: get_secret_injector is failed

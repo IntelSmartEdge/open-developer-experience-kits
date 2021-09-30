@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: enable PowerTools repository on CentOS
+  block:
+    - name: install dnf-plugins-core
+      package:
+        name: dnf-plugins-core
+    - name: enable PowerTools repository
+      # noqa 303 - yum is called intentionally here
+      command: yum config-manager --set-enabled PowerTools
+      register: pt_enable_command
+      failed_when: "('No matching repo to modify' not in pt_enable_command.stderr) and \
+                    ('No matching repo to modify' not in pt_enable_command.stdout) and \
+                    (pt_enable_command.rc != 0)"
+    - name: enable powertools repository
+      # noqa 303 - yum is called intentionally here
+      command: yum config-manager --set-enabled powertools
+      when: pt_enable_command.rc != 0
+  become: true
+  when:
+    - ansible_distribution_version >= '8'
+    - ansible_distribution == "CentOS"

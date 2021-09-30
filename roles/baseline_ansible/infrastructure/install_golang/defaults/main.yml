@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+golang_version: 1.16
+golang_download_name: "go{{ golang_version }}.linux-amd64.tar.gz"
+golang_download_url_base: "https://dl.google.com/go/"
+golang_download_url: "{{ golang_download_url_base }}{{ golang_download_name }}"
+golang_download_dest: "{{ project_dir }}/golang/{{ golang_download_name }}"
+golang_download_checksum: "sha256:013a489ebb3e24ef3d915abe5b94c3286c070dfe0818d5bca8108f1d6e8440d2"
+
+offline_gomod_file: "gomod.tar.gz"
+offline_gomod_dest: "~/go/pkg/"
+
+golang_default_exports: [
+  "export GOROOT=/usr/local/go",
+  "export GOPATH=~/go",
+  "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
+]
+
+golang_additional_exports: []

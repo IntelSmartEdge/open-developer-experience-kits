@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+- name: Create telemetry namespace
+  block:
+    - name: create temporary directory
+      tempfile:
+        state: directory
+        suffix: prometheus
+      register: tmp_dir
+
+    - name: chown tmp dir
+      file:
+        path: "{{ tmp_dir.path }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ project_group }}"
+      become: true
+
+    - name: copy namespace.yml to tmp directory
+      copy:
+        src: "namespace.yml"
+        dest: "{{ tmp_dir.path }}/"
+        owner: "{{ ansible_user }}"
+        group: "{{ project_group }}"
+        mode: u+rw
+      become: true
+
+    - name: create telemetry namespace
+      command: kubectl apply -f "{{ tmp_dir.path }}"/namespace.yml
+      changed_when: true
+
+    - name: remove temporary directory
+      file:
+        path: "{{ tmp_dir.path }}"
+        state: absent
+      when: tmp_dir.path is defined
+
+- name: check if root CA secret exists
+  command: kubectl get secret root-ca --namespace=telemetry
+  failed_when: false
+  changed_when: false
+  register: get_secret_rootca
+
+- name: Create telemetry certificates
+  block:
+    - name: create directory for CA certificate
+      file:
+        name: "{{ _telemetry_certs_dest }}/CA"
+        mode: a+r,u+wx
+        state: directory
+
+    - name: create root CA certificate
+      command: "{{ project_dir }}/scripts/tls_pair.sh telemetry {{ _telemetry_certs_dest }}/CA"
+      changed_when: true
+
+    - name: rename root CA cert
+      command: "cp {{ _telemetry_certs_dest }}/CA/cert.pem {{ _telemetry_certs_dest }}/root.pem"
+      changed_when: true
+
+    - name: create secret with root CA
+      shell: >
+        kubectl create secret generic root-ca
+        --from-file={{ _telemetry_certs_dest }}/root.pem
+        --namespace=telemetry
+
+    - name: remove dangling copy
+      file:
+        path: "{{ _telemetry_certs_dest }}/root.pem"
+        state: absent
+  when: get_secret_rootca.rc == 1

@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: comment swap lines in /etc/fstab
+  replace:
+    path: /etc/fstab
+    regexp: '(.*swap.*)$'
+    replace: '# \1'
+    mode: 0600
+  become: true
+
+- name: perform daemon reload
+  systemd:
+    daemon_reload: true
+  changed_when: false
+  become: true
+
+- name: disable swap usage
+  command: swapoff -a
+  changed_when: false
+  become: true
+
+- name: disable systemd swap units
+  block:
+    - name: get swap service unit name
+      shell: set -o pipefail | systemctl list-unit-files | grep \.swap | awk '{print $1}'  # noqa 303
+      register: unit_name
+      changed_when: false
+      become: true
+
+    - name: stop swap service
+      systemd:
+        state: stopped
+        name: "{{ unit_name.stdout }}"
+      become: true
+      when: '"swap" in unit_name.stdout'
+
+    - name: mask swap service to /dev/null
+      systemd:
+        name: "{{ unit_name.stdout }}"
+        masked: true
+      become: true
+      when: '"swap" in unit_name.stdout'
+  when: not (ansible_distribution == "CentOS" and ansible_distribution_version < '8')

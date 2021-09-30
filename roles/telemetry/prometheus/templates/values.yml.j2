@@ -1,0 +1,347 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+
+server:
+  image:
+    tag: v2.30.0
+  tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  extraInitContainers:
+    - name: setup-permissions
+      image: busybox
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        runAsNonRoot: false
+      volumeMounts:
+        - name: storage-volume
+          mountPath: /data
+      command: ["/bin/chmod","-R","777", "/data"]
+  extraVolumes:
+    - name: certs
+      projected:
+        sources:
+          - secret:
+              name: root-ca
+          - secret:
+              name: "{{ _proxy_secret_name }}"
+    - name: proxy-config
+      configMap:
+        name: prometheus-proxy-config
+  persistentVolume:
+    existingClaim: "{{ _pv_names[0] }}-claim"
+  extraVolumeMounts:
+    - name: certs
+      mountPath: /opt/prometheus/certs/
+  global:
+    scrape_interval: "{{ telemetry_prometheus_scrape_interval_seconds }}s"
+    scrape_timeout: 5s
+  sidecarContainers:
+    server-proxy:
+      image: nginx:alpine
+      securityContext:
+        runAsUser: 0
+        runAsNonRoot: false
+      volumeMounts:
+      - name: proxy-config
+        mountPath: /etc/nginx/nginx.conf
+        subPath: nginx.conf
+      - name: certs
+        mountPath: /opt/prometheus/certs
+      ports:
+      - containerPort: 9099
+  retention: "{{ telemetry_prometheus_retention }}"
+
+serverFiles:
+  prometheus.yml:
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+{% if telemetry_statsd_exporter_enable | d(false) %}
+      - job_name: 'statsd-exporter'
+        static_configs:
+          - targets: ['statsd-exporter.telemetry.svc:9120']
+        scheme: https
+        tls_config:
+          ca_file: /opt/prometheus/certs/root.pem
+          cert_file: /opt/prometheus/certs/tls.crt
+          key_file: /opt/prometheus/certs/tls.key
+          server_name: statsd-exporter
+{% endif %}
+
+      - job_name: 'kubelet-metrics'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+        - role: node
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: 'node-exporter'
+        scheme: https
+        tls_config:
+          ca_file: /opt/prometheus/certs/root.pem
+          cert_file: /opt/prometheus/certs/tls.crt
+          key_file: /opt/prometheus/certs/tls.key
+          server_name: node_exporter
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_pod_name]
+          regex: '.*node-exporter.*'
+          action: keep
+        - source_labels: [__address__]
+          regex: '.*:9100'
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      - job_name: 'collectd'
+        scheme: https
+        tls_config:
+          ca_file: /opt/prometheus/certs/root.pem
+          cert_file: /opt/prometheus/certs/tls.crt
+          key_file: /opt/prometheus/certs/tls.key
+          server_name: collectd
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_pod_name]
+          regex: 'collectd.*'
+          action: keep
+        - source_labels: [__address__]
+          regex: '.*:9103'
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      - job_name: 'cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /opt/prometheus/certs/root.pem
+          cert_file: /opt/prometheus/certs/tls.crt
+          key_file: /opt/prometheus/certs/tls.key
+          server_name: cadvisor
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_pod_name]
+          regex: 'cadvisor.*'
+          action: keep
+        - source_labels: [__address__]
+          regex: '.*:9105'
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+      - job_name: 'kubevirt'
+        scheme: https
+        tls_config:
+          ca_file: /opt/prometheus/certs/root.pem
+          cert_file: /opt/prometheus/certs/tls.crt
+          key_file: /opt/prometheus/certs/tls.key
+          server_name: kubevirt
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_pod_name]
+          regex: 'kubevirt-prometheus-metrics.*'
+          action: keep
+        - source_labels: [__address__]
+          regex: '.*:8443'
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: kubernetes_pod_name
+
+{% if ne_istio_enable | d(false) %}
+      # Mixer scrapping. Defaults to Prometheus and mixer on same namespace.
+      - job_name: 'istio-mesh'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-telemetry;prometheus
+
+      # Scrape config for envoy stats
+      - job_name: 'envoy-stats'
+        metrics_path: /stats/prometheus
+        kubernetes_sd_configs:
+        - role: pod
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_container_port_name]
+          action: keep
+          regex: '.*-envoy-prom'
+        - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+          action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:15090
+          target_label: __address__
+        - action: labeldrop
+          regex: __meta_kubernetes_pod_label_(.+)
+        - source_labels: [__meta_kubernetes_namespace]
+          action: replace
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: pod_name
+
+      - job_name: 'istio-policy'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-policy;http-policy-monitoring
+
+      - job_name: 'istio-telemetry'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-telemetry;http-monitoring
+
+      - job_name: 'pilot'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istiod;http-monitoring
+        - source_labels: [__meta_kubernetes_service_label_app]
+          target_label: app
+      - job_name: 'galley'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-galley;http-monitoring
+
+      - job_name: 'citadel'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-citadel;http-monitoring
+
+      - job_name: 'sidecar-injector'
+        kubernetes_sd_configs:
+        - role: endpoints
+          namespaces:
+            names:
+            - istio-system
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+          action: keep
+          regex: istio-sidecar-injector;http-monitoring
+{% endif %}
+
+nodeExporter:
+  secretName: "{{ _node_exporter_name }}"
+  image:
+    tag: v1.2.2
+  extraArgs:
+    web.config: /opt/config/web-config.yml
+    collector.textfile.directory: /opt/vpumetrics
+  extraConfigmapMounts:
+    - name: config-vol
+      mountPath: /opt/config/
+      configMap: node-exporter-cm
+  extraHostPathMounts:
+    - name: vpumetrics
+      hostPath: /tmp/node-exporter
+      mountPath: /opt/vpumetrics
+      type: DirectoryOrCreate
+  extraSecretMounts:
+    - name: ne-certs
+      secretName: "{{ _node_exporter_secret }}"
+      mountPath: /opt/certs/node_exporter
+    - name: ca
+      secretName: root-ca
+      mountPath: /opt/certs/ca
+  hostNetwork: true
+  tolerations:
+    - effect: NoSchedule
+      key: cmk
+      operator: Exists
+
+kubeStateMetrics:
+  enabled: false
+
+proxy:
+  apiPort: 9099
+  internalPort: 9090
+  serverName: "{{ _proxy_server_name }}"
+  secretName: "{{ _proxy_secret_name }}"
+  certsDest:  /opt/prometheus/certs
+  image: nginx:alpine
+  configMap: prometheus-proxy-config
+  service:
+    name: prometheus
+  protocols: TLSv1.2 TLSv1.3
+  ciphers:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-ECDSA-AES256-GCM-SHA384"

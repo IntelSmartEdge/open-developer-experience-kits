@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# CentOS-Vault repo not working properly for CentOS 8, so install kernel headers and devel directly
+- name: get kernel version
+  shell: set -o pipefail && yum list installed --disableexcludes=main |grep "kernel\." | awk '{print $2;}'
+  register: installed_kernel_version
+  changed_when: false
+
+- name: remove kernel-*headers package before kernel-headers installation
+  package:
+    name:
+      - kernel-*headers
+    disable_excludes: main
+    state: absent
+  become: true
+
+- name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: "{{ retry_delay | default(3) }}"
+  register: source_status
+  until: source_status is not failed
+  with_items:
+    # - "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-headers-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+    # - "http://mirror.centos.org/centos/7/os/x86_64/Packages/kernel-devel-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+    - "kernel-headers-{{ installed_kernel_version.stdout }}"
+    - "kernel-devel-{{ installed_kernel_version.stdout }}"
+  when:
+    - ansible_distribution == "CentOS"
+    - ansible_distribution_version < '8'
+
+- name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: "{{ retry_delay | default(3) }}"
+  register: source_status
+  until: source_status is not failed
+  with_items:
+    - "https://vault.centos.org/{{ full_dist_version }}/BaseOS/x86_64/os/Packages/kernel-headers-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+    - "https://vault.centos.org/{{ full_dist_version }}/BaseOS/x86_64/os/Packages/kernel-devel-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+  when:
+    - ansible_distribution == "CentOS"
+    - ansible_distribution_version >= '8'
+    - full_dist_version not in latest_centos_release
+
+- name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: "{{ retry_delay | default(3) }}"
+  register: source_status
+  until: source_status is not failed
+  with_items:
+    - "http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/kernel-headers-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+    - "http://mirror.centos.org/centos/8/BaseOS/x86_64/os/Packages/kernel-devel-{{ installed_kernel_version.stdout }}.x86_64.rpm"
+  when:
+    - ansible_distribution == "CentOS"
+    - ansible_distribution_version >= '8'
+    - full_dist_version in latest_centos_release
+
+- name: pull matching kernel headers and devel on RHEL {{ full_dist_version }}
+  become: true
+  package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: "{{ retry_delay | default(3) }}"
+  register: source_status
+  until: source_status is not failed
+  with_items:
+    - "kernel-headers-{{ installed_kernel_version.stdout }}"
+    - "kernel-devel-{{ installed_kernel_version.stdout }}"
+  when:
+    - ansible_distribution == "RedHat"
+    - ansible_distribution_version >= '8'

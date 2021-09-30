@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+- name: print hostvars
+  debug:
+    var: hostvars[inventory_hostname]
+
+- name: print vars about environment
+  debug:
+    msg: |
+      ansible ver: {{ ansible_version.string }}
+      distro: {{ ansible_distribution }} {{ ansible_distribution_version }}
+      hostname: {{ ansible_nodename }}
+      cmdline: {{ ansible_proc_cmdline }}
+      interfaces: {{ ansible_interfaces }}
+      memory: {{ ansible_memory_mb }}
+      cpu: {{ ansible_processor }}

@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.cadvisor.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ .Values.cadvisor.name }}
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.cadvisor.name }}
+    spec:
+      containers:
+        - name: {{ .Values.proxy.name }}
+          image: {{ .Values.proxy.image }}
+          volumeMounts:
+            - name: proxy-config
+              mountPath: {{ .Values.proxy.pathToNginxCfg }}
+              subPath: nginx.conf
+            - name: certs
+              mountPath: {{ .Values.proxy.certsDest }}
+          ports:
+            - containerPort: {{ .Values.proxy.metricsCadvisorPort }}
+        - name: {{ .Values.cadvisor.name }}
+          args:
+            - --port={{ .Values.proxy.internalCadvisorPort }}
+            - --disable_metrics={{ .Values.cadvisor.disabledMetrics }}
+            - --store_container_labels={{ .Values.cadvisor.storeContainerLabels }}
+            - --max_housekeeping_interval={{ .Values.cadvisor.maxHousekeepingInterval }}
+            - --docker_only={{ .Values.cadvisor.dockerOnly }}
+          image: {{ .Values.cadvisor.image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          resources:
+            requests:
+              cpu: {{ .Values.cadvisor.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.cadvisor.resources.limits.memory }}
+              cpu: {{ .Values.cadvisor.resources.limits.cpu }}
+          volumeMounts:
+            - name: rootfs
+              mountPath: /rootfs
+              readOnly: true
+            - name: var-run
+              mountPath: /var/run
+              readOnly: true
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: docker
+              mountPath: /var/lib/docker
+              readOnly: true
+            - name: disk
+              mountPath: /dev/disk
+              readOnly: true
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      volumes:
+        - name: rootfs
+          hostPath:
+            path: /
+        - name: var-run
+          hostPath:
+            path: /var/run
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: docker
+          hostPath:
+            path: /var/lib/docker
+        - name: disk
+          hostPath:
+            path: /dev/disk
+        - name: proxy-config
+          configMap:
+            name: {{ .Values.proxy.configMap }}
+        - name: certs
+          projected:
+            sources:
+            - secret:
+                name: root-ca
+            - secret:
+                name: {{ .Values.proxy.secretName }}

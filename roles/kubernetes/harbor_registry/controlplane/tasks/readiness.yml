@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: check harbor deployments
+  check_k8s_object:
+    kind: deployment
+    name: "harbor-app-{{ item }}"
+    namespace: harbor
+  with_items:
+  - chartmuseum
+  - core
+  - jobservice
+  - nginx
+  - notary-server
+  - notary-signer
+  - portal
+  - registry
+
+- name: check harbor statefulsets
+  check_k8s_object:
+    kind: statefulset
+    name: "harbor-app-{{ item }}"
+    namespace: harbor
+  with_items:
+  - database
+  - redis
+  - trivy

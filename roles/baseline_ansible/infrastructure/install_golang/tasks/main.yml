@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: get installed golang version
+  command: "cat /usr/local/go/VERSION"
+  ignore_errors: true
+  register: go_version_file_cat
+  changed_when: false
+
+- name: update golang download url
+  set_fact:
+    golang_download_url: "{{ offline_golang_url }}/{{ golang_download_name }}"
+  when: offline_role | default(False) and offline_golang_url is defined
+
+- name: set expected golang version as in VERSION file
+  set_fact:
+    golang_version_fullname: "{{ 'go' + (golang_version | string) }}"
+
+- name: install or update package
+  include_tasks: install.yml
+  when: golang_version_fullname != go_version_file_cat.stdout
+
+- name: install packages
+  include_tasks: install_packages.yml
+
+- name: install offline packages
+  include_tasks: offline.yml
+  when: offline_role | default(False)

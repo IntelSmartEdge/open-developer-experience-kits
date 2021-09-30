@@ -1,0 +1,99 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+# Playbook for single node Network Edge cluster deployment
+
+
+- hosts: edgenode_group
+  pre_tasks:
+    - name: set node name
+      set_fact: node_name={{ ansible_nodename | lower }}
+    - name: create helper variable
+      set_fact:
+        single_node_deployment: true
+    - name: check deployment settings
+      include_tasks: ./tasks/settings_check_ne.yml
+    - name: check deployment settings for single node deployment
+      include_tasks: ./tasks/settings_check_ne_single_node.yml
+    - name: print deployment settings
+      include_tasks: ./tasks/print_vars.yml
+    - name: Set global variables for baseline ansible
+      set_fact:
+        project_user: "{{ ansible_user }}"
+  handlers:
+    - import_tasks: "{{ playbook_dir }}/tasks/reboot_server.yml"
+  roles:
+    - role: infrastructure/setup_offline
+    - role: infrastructure/setup_baseline_ansible
+    - role: infrastructure/build_noproxy
+    - role: baseline_ansible/infrastructure/os_proxy
+    - role: infrastructure/os_setup
+
+    - role: baseline_ansible/infrastructure/time_setup_ntp
+      when: ntp_enable | default(False)
+    - role: infrastructure/grub
+    - role: infrastructure/conditional_reboot
+    - role: infrastructure/e810_driver_update
+      when: e810_driver_enable | default(False)
+
+    - role: infrastructure/git_repo
+    - role: baseline_ansible/infrastructure/install_golang
+      offline_role: "{{ offline_enable | default(false) }}"
+      golang_additional_exports:
+        - "export GOPRIVATE=github.com/smart-edge-open"
+    - role: infrastructure/docker
+    - role: telemetry/collectd/node
+      when: "telemetry_collectd_enable | default(True)"
+
+- hosts: controller_group
+  pre_tasks:
+    - name: set node name
+      set_fact: node_name={{ ansible_nodename | lower }}
+    - name: create helper variable
+      set_fact:
+        single_node_deployment: true
+  handlers:
+    - import_tasks: "{{ playbook_dir }}/tasks/reboot_server.yml"
+  roles:
+    - role: infrastructure/setup_baseline_ansible
+    - role: infrastructure/build_noproxy
+    - role: infrastructure/os_setup
+    - role: kubernetes/install
+    - role: kubernetes/customize_kubelet
+    - role: kubernetes/controlplane
+    - role: kubernetes/helm
+    - role: kubernetes/harbor_registry/controlplane
+    - role: kubernetes/cni
+    - role: kubernetes/default_netpol
+    - role: kubernetes/create_namespaces
+
+    - role: telemetry/certs
+      when: >
+        telemetry_prometheus_enable | default(True) or
+        telemetry_collectd_enable | default(True) or
+        telemetry_cadvisor_enable | default(True) or
+        telemetry_grafana_enable | default(True)
+
+    - role: telemetry/prometheus
+      when: "telemetry_prometheus_enable | default(True)"
+    - role: telemetry/statsd-exporter
+      when: "telemetry_statsd_exporter_enable | default(True)"
+
+    - role: telemetry/collectd/controlplane
+      when: "telemetry_collectd_enable | default(True)"
+    - role: telemetry/cadvisor
+      when: "telemetry_cadvisor_enable | default(True)"
+    - role: telemetry/grafana
+      when: "telemetry_grafana_enable | default(True)"
+
+    - role: kubernetes/nfd
+      when: ne_nfd_enable | default(True)
+
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/prepare_node
+      reference_host: "{{ groups['controller_group'][0] }}"
+      when: "sriov_network_operator_enable | default(False)"
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/install
+      when: "sriov_network_operator_enable | default(False)"
+    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/configure
+      when: "sriov_network_operator_enable and sriov_network_operator_configure_enable | default(False)"

@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Add udev kvm system rule
+  lineinfile:
+    dest: /etc/udev/rules.d/80-kvm.rules
+    line: KERNEL=="kvm", GROUP="kvm", MODE="0666"
+    state: present
+    create: true
+    mode: 0644
+  register: add_kvm_rule
+  become: true
+
+- name: Update if rule changed
+  block:
+  - name: Reload udev rules
+    command: udevadm control --reload-rules
+    changed_when: true
+
+  - name: Retrigger udev
+    command: udevadm trigger
+    changed_when: true
+
+  become: true
+  when:
+    - add_kvm_rule.changed

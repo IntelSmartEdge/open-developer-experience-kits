@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: include time/verify/defaults vars
+  include_vars: ../../time_verify_ntp/defaults/main.yml
+
+- name: remove ntp time set flag
+  file:
+    state: absent
+    path: "{{ ntp_time_set }}"
+
+- name: setup ntp on RHEL-based distro
+  include_tasks: rhel.yml
+  when: ansible_os_family == "RedHat"
+
+- name: setup ntp on Debian-based distro
+  include_tasks: debian.yml
+  when: ansible_os_family == "Debian"

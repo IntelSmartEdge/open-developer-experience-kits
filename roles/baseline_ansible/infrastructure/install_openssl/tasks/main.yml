@@ -1,0 +1,113 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Load OS specyfic vars
+  include_vars: debian.yml
+  when:
+    - ansible_os_family == "Debian"
+
+- name: get installed OpenSSL version
+  command: "openssl version"
+  ignore_errors: true
+  register: openssl_installed_version
+  changed_when: false
+
+- name: install base OpenSSL from sources
+  block:
+  - name: install dependencies
+    include_role:
+      name: infrastructure/install_dependencies
+
+  - name: update OpenSSL download url
+    set_fact:
+      openssl_download_url: "{{ offline_openssl_download_url }}/{{ openssl_package_name }}.tar.gz"
+    when: offline_role | default(False) and offline_openssl_download_url is defined
+
+  - name: create OpenSSL directory
+    file:
+      path: "{{ openssl_project_dir }}"
+      state: directory
+      owner: "{{ project_user }}"
+      group: "{{ project_group  }}"
+      mode: 0755
+    become: true
+
+  - name: "OpenSSL download from {{ openssl_download_url }}"
+    get_url:
+      url: "{{ openssl_download_url }}"
+      dest: "{{ openssl_project_dir }}"
+      checksum: "{{ openssl_checksum }}"
+      owner: "{{ project_user }}"
+      group: "{{ project_group }}"
+      mode: 0755
+    register: openssl_download_result
+    retries: "{{ number_of_retries  }}"
+    until: openssl_download_result is succeeded
+    delay: "{{ retry_delay }}"
+
+  - name: OpenSSL extract
+    unarchive:
+      src: "{{ openssl_download_result.dest }}"
+      dest: "{{ openssl_project_dir }}"
+      owner: "{{ project_user }}"
+      group: "{{ project_group }}"
+      mode: 0755
+      remote_src: true
+
+  - name: Set OpenSSL configure options
+    set_fact:
+      openssl_config_options: >
+        --prefix={{ openssl_custom_install_path }}
+        --openssldir={{ openssl_custom_install_path }}
+        -Wl,-rpath,{{ openssl_custom_install_path }}lib
+    when: ansible_distribution == "RedHat"
+
+  - name: OpenSSL configure
+    command: "./config {{ openssl_config_options|default('') }}"
+    args:
+      chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
+
+  - name: OpenSSL make
+    make:
+      chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
+      params:
+        NUM_THREADS: "{{ ansible_processor_vcpus }}"
+
+  - name: OpenSSL make install
+    make:
+      chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
+      target: install
+    become: true
+
+  - name: OpenSSL system wide
+    become: true
+    block:
+    - name: OpenSSL create ld config
+      lineinfile:
+        state: present
+        create: true
+        dest: "/etc/ld.so.conf.d/localuser.conf"
+        line: "{{ item }}"
+        mode: 0644
+      with_items:
+        - "/usr/local/lib"
+        - "/usr/local/lib64"
+
+    - name: OpenSSL reload ld configs
+      command: "ldconfig -v"
+    when: ansible_distribution != "RedHat"
+
+  - name: OpenSSL install binary
+    lineinfile:
+      state: present
+      create: true
+      dest: "/etc/profile.d/openssl.sh"
+      line: "PATH={{ openssl_custom_install_path }}bin/:$PATH"
+      mode: 0644
+    become: true
+    when: ansible_distribution == "RedHat"
+
+  - name: Setup certificates
+    include_tasks: setup_certs.yml
+
+  when: openssl_version|string not in openssl_installed_version.stdout.split()

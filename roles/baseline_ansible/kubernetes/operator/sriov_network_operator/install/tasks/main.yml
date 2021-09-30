@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: load common SR-IOV Network Operator variables
+  include_vars: "{{ role_path }}/../defaults/main.yml"
+
+- name: check if SR-IOV Network Operator deployment already exists
+  command: "kubectl get deployments.apps -n {{ sriov_network_operator_namespace }} sriov-network-operator"
+  ignore_errors: true
+  register: sno_deployment_status
+  changed_when: true
+
+- name: install SR-IOV Network Operator
+  block:
+  - name: download SRIOV Network Operator repo
+    git:
+      repo: "{{ _sriov_network_operator.url }}"
+      dest: "{{ _sriov_network_operator.download_dir }}"
+      clone: true
+      update: true
+      version: "{{ _sriov_network_operator.commit }}"
+      force: true
+    register: result
+    retries: "{{ number_of_retries | default(10) }}"
+    until: result is succeeded
+    delay: "{{ retry_delay | default(5) }}"
+
+  - name: Create namespace for SR-IOV Network Operator
+    include_role:
+      name: kubernetes/custom_namespace
+    vars:
+      - _custom_ns: "{{ sriov_network_operator_namespace }}"
+
+  - name: Create certificates for SR-IOV Network Operator admission controller
+    include_tasks: sno_certs.yml
+
+  - name: Copy customized git patch for downloading specific images
+    template:
+      src: "{{ _sriov_network_operator.git_patch }}.j2"
+      dest: "{{ _sriov_network_operator.download_dir }}/{{ _sriov_network_operator.git_patch }}"
+      mode: preserve
+
+  - name: Apply git patch for SRIOV Network Operator
+    patch:
+      src: "{{ _sriov_network_operator.download_dir }}/{{ _sriov_network_operator.git_patch }}"
+      basedir: "{{ _sriov_network_operator.download_dir }}"
+      remote_src: true
+      strip: 1
+    changed_when: true
+
+  - name: Install skopeo for SRIOV Network Operator deployment
+    include_tasks: skopeo_install.yml
+
+  - name: Install SR-IOV Network Operator
+    make:
+      target: "deploy-setup-k8s"
+      chdir: "{{ _sriov_network_operator.download_dir }}"
+    environment:
+      PATH: "{{ makefile_env_path_var }}"
+
+  - name: patch SR-IOV Network Config daemon for custom NodeSelector
+    command: >
+      kubectl patch -n {{ sriov_network_operator_namespace }} sriovoperatorconfigs.sriovnetwork.openshift.io default
+      --type='json' -p='[{"op": "replace", "path": "/spec/configDaemonNodeSelector", "value":{
+      "{{ _sriov_network_operator_label.name }}":"{{ _sriov_network_operator_label.value }}"
+      }}]'
+    register: result
+    retries: "{{ patching_retries }}"
+    until: result is succeeded
+    delay: "{{ patching_delay }}"
+  when: sno_deployment_status is failed

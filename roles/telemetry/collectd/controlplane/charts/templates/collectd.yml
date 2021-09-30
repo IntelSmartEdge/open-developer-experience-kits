@@ -1,0 +1,90 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.collectd.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ .Values.collectd.name }}
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.collectd.name }}
+    spec:
+      hostNetwork: true
+      containers:
+        - name: {{ .Values.exporter.name }}
+          image: {{ .Values.exporter.image }}
+          ports:
+            - containerPort: 9104
+          args:
+            - "--collectd.listen-address=127.0.0.1:25826"
+            - "--web.listen-address=127.0.0.1:9104"
+            - "--collectd.typesdb-file=/opt/collectd/types.db"
+          volumeMounts:
+            - name: typesdb
+              mountPath: /opt/collectd
+        - name: {{ .Values.proxy.name }}
+          image: {{ .Values.proxy.image }}
+          volumeMounts:
+            - name: proxy-config
+              mountPath: {{ .Values.proxy.pathToNginxCfg }}
+              subPath: nginx.conf
+            - name: certs
+              mountPath: {{ .Values.proxy.certsDest }}
+          ports:
+            - containerPort: {{ .Values.proxy.metricsCollectdPort }}
+        - name: {{ .Values.collectd.name }}
+          image: {{ .Values.collectd.image }}
+          imagePullPolicy: {{ .Values.pullPolicy }}
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: {{ .Values.collectd.resources.requests.cpu }}
+            limits:
+              cpu: {{ .Values.collectd.resources.limits.cpu }}
+              memory: {{ .Values.collectd.resources.limits.memory }}
+          volumeMounts:
+            - name: varrun
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
+            - name: cfg
+              mountPath: /opt/collectd/etc/collectd.conf.d
+            - name: pmd
+              mountPath: /pmd
+      tolerations:
+        - effect: NoSchedule
+          key: cmk
+          operator: Exists
+      volumes:
+        - name: varrun
+          hostPath:
+            path: /var/run
+        - name: tmp
+          hostPath:
+            path: /tmp
+        - name: typesdb
+          configMap:
+            name: {{ .Values.exporter.typesDBMap }}
+        - name: cfg
+          hostPath:
+            path: {{ .Values.projectDir }}/collectd/configs
+        - name: pmd
+          hostPath:
+            path: {{ .Values.projectDir }}/collectd/pmd
+        - name: proxy-config
+          configMap:
+            name: {{ .Values.proxy.configMap }}
+        - name: certs
+          projected:
+            sources:
+            - secret:
+                name: root-ca
+            - secret:
+                name: {{ .Values.proxy.secretName }}

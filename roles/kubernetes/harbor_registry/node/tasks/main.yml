@@ -1,0 +1,76 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+- name: load docker-registry variables
+  include_vars: "{{ role_path }}/../controlplane/defaults/main.yml"
+
+- name: create directory for copying certificate
+  file:
+    path: /etc/docker/certs.d/{{ _registry_ip_address }}:{{ _registry_port }}
+    state: directory
+    mode: 0755
+  become: true
+
+- name: get ca.crt from registry
+  get_url:
+    url: https://{{ _registry_ip_address }}:{{ _registry_port }}/api/{{ harbor_api_version }}/systeminfo/getcert
+    dest: /etc/docker/certs.d/{{ _registry_ip_address }}:{{ _registry_port }}/harbor.crt
+    use_proxy: false
+    validate_certs: false
+    force: true
+  retries: 10
+  delay: 10
+  register: result
+  until: result is succeeded
+  become: true
+
+- name: change the owner and group of harbor.crt
+  file:
+    path: /etc/docker/certs.d/{{ _registry_ip_address }}:{{ _registry_port }}/harbor.crt
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  become: true
+
+- name: login harbor registry firstly
+  command: docker login "{{ _registry_ip_address }}:{{ _registry_port }}" -uadmin -p{{ harbor_admin_password }}
+  register: result
+  until: result is succeeded
+  retries: 60
+  delay: 10
+  changed_when: false
+  
+- name: update repositories cache
+  command: apt update
+  changed_when: true
+  become: true
+
+- name: check whether the intel project is created
+  shell: |
+    curl --noproxy "*" -X GET \
+    "https://{{ _registry_ip_address }}:{{ _registry_port }}/api/{{ harbor_api_version }}/projects?name=intel&public=true" \
+    -H "accept: application/json" \
+    -k --cacert /etc/docker/certs.d/{{ _registry_ip_address }}:{{ _registry_port }}/harbor.crt \
+    -u "admin:{{ harbor_admin_password }}"
+  register: intel_proj_is_created
+  until: intel_proj_is_created is succeeded
+  retries: 5
+  delay: 5
+  args:
+    warn: false
+  changed_when: false
+
+- name: create a new harbor project named intel
+  shell: |
+    curl --noproxy "*" -X POST \
+    "https://{{ _registry_ip_address }}:{{ _registry_port }}/api/{{ harbor_api_version }}/projects" \
+    -H "accept: application/json" -H "Content-Type: application/json" \
+    -d "{ \"project_name\": \"intel\", \"metadata\": { \"public\": \"true\" }, \"public\": true}" \
+    -k --cacert "/etc/docker/certs.d/{{ _registry_ip_address }}:{{ _registry_port }}/harbor.crt" \
+    -u "admin:{{ harbor_admin_password }}"
+  register: create_result
+  until: create_result.rc == 0
+  when: intel_proj_is_created.stdout == '[]'
+  args:
+    warn: false

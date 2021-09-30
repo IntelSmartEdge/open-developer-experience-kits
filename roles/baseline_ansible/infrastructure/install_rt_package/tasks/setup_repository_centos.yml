@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: setup repository for kernel-rt
+  block:
+    - name: fail if kernel_rt_repo_url is required, but not supplied
+      fail:
+        msg: "Requested kernel_rt_repo_url is either undefined or empty"
+      when:
+        - kernel_rt_repo_url is not defined or kernel_rt_repo_url|length == 0
+
+    - name: setup repository for kernel-rt | get repository file
+      get_url:
+        url: "{{ kernel_rt_repo_url }}"
+        dest: "{{ kernel_repo_dest }}"
+        mode: 0644
+        force: true
+      register: result
+      retries: "{{ number_of_retries }}"
+      until: result is succeeded
+      delay: "{{ retry_delay }}"
+      become: true
+
+    - name: find out place for GPG key
+      command: awk -F'=' '/gpgkey/ {gsub("file://", ""); print $2; exit;}' {{ kernel_repo_dest }}
+      register: gpg_key_filepath
+
+    - name: set GPG key filepath
+      set_fact:
+        repo_gpg_filepath: "{{ gpg_key_filepath.stdout }}"
+
+    - name: fail if GPG key required, but not supplied
+      fail:
+        msg: "Requested kernel repository requires GPG key, but the kernel_rt_repo_key is either undefined or empty"
+      when:
+        - repo_gpg_filepath|length > 0
+        - kernel_rt_repo_key is not defined or kernel_rt_repo_key|length == 0
+
+    - name: setup repository for kernel-rt | get GPG key
+      get_url:
+        url: "{{ kernel_rt_repo_key }}"
+        dest: "{{ repo_gpg_filepath }}"
+        mode: 0644
+        force: true
+      register: result
+      retries: "{{ number_of_retries }}"
+      until: result is succeeded
+      delay: "{{ retry_delay }}"
+      become: true
+
+    - name: setup repository for kernel-rt | import GPG key
+      rpm_key:
+        state: present
+        key: "{{ repo_gpg_filepath }}"
+      become: true
+
+  when:
+    - setup_user_defined_kernel_rt_repo

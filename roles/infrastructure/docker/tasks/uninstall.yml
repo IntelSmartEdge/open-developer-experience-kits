@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: load OS specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+  - files:
+      - "{{ ansible_distribution|lower }}{{ ansible_distribution_major_version|lower }}.yml"
+      - "{{ ansible_os_family|lower }}.yml"
+
+- name: Remove auditd docker rules
+  file:
+    name: "/etc/audit/rules.d/docker.rules"
+    state: absent
+  become: true
+
+- name: Restart auditd
+  command: service auditd restart
+  changed_when: true
+  become: true
+  args:
+    warn: false
+
+- name: disable docker service
+  systemd:
+    name: docker
+    enabled: false
+    state: stopped
+  failed_when: false
+  become: true
+
+- name: uninstall
+  yum:
+    name: "{{ _docker_packages_to_remove }}"
+    state: absent
+  become: true
+
+- name: remove docker-compose
+  pip:
+    name: docker-compose
+    state: absent
+  failed_when: false
+  become: true
+
+- name: remove dirs and files
+  file:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+  - /root/.docker
+  - /etc/systemd/system/docker.service.d
+  - /etc/docker
+  - /usr/bin/docker
+  - /var/lib/docker
+  - /etc/default/docker
+  - /usr/bin/docker-containerd
+  - /usr/bin/docker-runc
+  - /var/run/docker.sock
+  become: true
+
+- name: remove repository
+  yum_repository:
+    name: docker
+    state: absent
+  become: true
+
+- name: clear yum cache
+  command: yum clean all
+  args:
+    warn: false
+  changed_when: true
+  become: true
+  when: ansible_os_family == "RedHat"
+
+- name: clear apt cache
+  block:
+    - name: clear useless packages
+      apt:
+        autoclean: true
+      changed_when: true
+    - name: remove invalid dependencies
+      apt:
+        autoremove: true
+  become: true
+  when: ansible_os_family == "Debian"
+
+- name: remove group "docker"
+  group:
+    name: docker
+    state: absent
+  become: true

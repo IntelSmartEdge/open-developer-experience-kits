@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: {{ item.name }}
+  namespace: {{ sriov_network_operator_namespace }}
+spec:
+  resourceName: {{ item.resource_name }}
+  networkNamespace: {{ item.network_namespace }}
+{% if item.vlan is defined %}
+  vlan: {{ item.vlan }}
+{% endif %}
+{% if item.link_state is defined %}
+  linkState: {{ item.link_state }}
+{% endif %}
+{% if item.max_tx_rate is defined %}
+  maxTxRate: {{ item.max_tx_rate }}
+{% endif %}
+{% if item.min_tx_rate is defined %}
+  minTxRate: {{ item.min_tx_rate }}
+{% endif %}
+{% if item.vlan_qos is defined %}
+  vlanQoS: {{ item.vlan_qos }}
+{% endif %}
+{% if item.trust_vf is defined %}
+  trust: {{ item.trust_vf }}
+{% endif %}
+{% if item.capabilities is defined %}
+  capabilities: {{ item.capabilities }}
+{% endif %}
+{% if item.spoofChk is defined %}
+  spoofChk: "{{ item.spoofChk }}"
+{% endif %}
+{% if item.ipam is defined %}
+  ipam: |-
+  {% for line in item.ipam.split('\n') %}
+  {{ line }}
+  {% endfor %}
+{% endif %}

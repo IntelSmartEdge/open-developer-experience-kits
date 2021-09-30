@@ -1,0 +1,138 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+- name: check if harbor release already exists
+  command: helm status harbor-app -n harbor
+  failed_when: false
+  register: get_release_harbor
+  changed_when: false
+
+- name: Set Git Repo URL
+  set_fact:
+    _git_repo_harbor: "{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}:{{ _offline_package_path }}/github/harbor-helm/"
+  when: offline_enable | default(false)
+
+- name: harbor installation
+  block:
+    - name: download helm-harbor repo
+      git:
+        repo: "{{ _git_repo_harbor }}"
+        dest: "{{ _git_repo_dest_harbor }}"
+        version: "{{ _harbor_helm_tag }}"
+        update: false
+      register: result
+
+    - name: check hugepage size
+      shell: set -o pipefail && grep Hugepagesize /proc/meminfo | awk '{print $2}'
+      register: hugepage_size
+      changed_when: false
+
+    - name: check whether Hugepages is enabled
+      shell: set -o pipefail && grep HugePages_Total /proc/meminfo | awk '{print $2}'
+      register: hugepages_total
+      changed_when: false
+
+    - name: print Hugepages info
+      debug:
+        msg:
+          - "HugePages enable: {{ hugepages_total.stdout | int > 0 }}"
+          - "Hugepagesize: {{ hugepage_size.stdout }}"
+
+    - name: generate admin password
+      set_fact:
+        harbor_admin_password: "{{ lookup('password', '/dev/null chars=ascii_letters,digits') }}"
+
+    - name: create namespace for harbor
+      command: kubectl create namespace harbor
+      failed_when: false
+
+    - name: delete old Harbor admin secret if it exists
+      command: kubectl delete secret -n harbor harbor-admin
+      register: result
+      changed_when: true
+      failed_when:
+        - result.rc != 0
+        - "'Error from server (NotFound)' not in result.stderr"
+
+    - name: create Harbor admin secret
+      command: >
+        kubectl create secret -n harbor generic harbor-admin
+        --from-literal=admin-password={{ harbor_admin_password }}
+      changed_when: true
+
+    - name: copy harbor helm chart values.j2 replace default values.yml
+      template:
+        src: values.j2
+        dest: "{{ _git_repo_dest_harbor }}/values.yaml"
+        mode: "0755"
+      become: true
+
+    # Following line sets the tls version and available ciphers. This should be replaced in future releases!!!
+    - name: patch used tls version and ciphers
+      replace:
+        path: "{{ _git_repo_dest_harbor }}/templates/nginx/configmap-https.yaml"
+        regexp : "{{ item.regex }}"
+        replace: "{{ item.newline }}"
+      loop:
+        - {regex: "ssl_protocols\\ (TLSv1\\.[0-9]+\\ ?)*;", newline: "ssl_protocols TLSv1.2 TLSv1.3;"}
+        - {regex: "ssl_ciphers\\ '.*';", newline: "ssl_ciphers 'TLS_AES_256_GCM_SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384';"}
+
+    - name: make pv disk
+      file:
+        path: "{{ _harbor_pv_dir }}/{{ item }}"
+        state: directory
+        mode: 0700
+      with_items:
+        - harbor-disk1
+        - harbor-disk2
+        - harbor-disk3
+        - harbor-disk4
+        - harbor-disk5
+        - harbor-disk6
+
+    - name: copy pv disk.yaml to host
+      template:
+        src: templates/disks.j2
+        dest: "{{ _git_repo_dest_harbor }}/disks.yaml"
+        mode: 0755
+
+    - name: create PersistentVolume for harbor
+      command: kubectl apply -f {{ _git_repo_dest_harbor }}/disks.yaml
+      failed_when: false
+      changed_when: false
+
+    - name: helm install
+      command: helm install harbor-app -f values.yaml . -n harbor
+      args:
+        chdir: "{{ _git_repo_dest_harbor }}"
+      ignore_errors: false
+      environment:
+        PATH: "/usr/sbin:{{ ansible_env.PATH }}"
+  when: get_release_harbor.rc != 0
+
+- name: get admin password
+  block:
+    - name: extract admin password
+      shell: >
+        kubectl get secret --namespace harbor harbor-admin -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+      register: harbor_password_cmd
+    - name: store admin password
+      set_fact:
+        harbor_admin_password: "{{ harbor_password_cmd.stdout }}"
+  when: get_release_harbor.rc == 0
+
+- name: update repositories cache
+  command: apt update
+  changed_when: true
+  become: true
+
+- name: copy Harbor network policy
+  copy:
+    src: harbor-np.yml
+    dest: "{{ _git_repo_dest_harbor }}"
+    mode: preserve
+
+- name: apply Harbor network policy
+  command: "kubectl apply -f {{ _git_repo_dest_harbor }}/harbor-np.yml"
+  changed_when: true

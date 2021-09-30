@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: open or close firewall ports on "{{ ansible_os_family }}"-based distro
+  ufw:
+    rule: "{{ item[1] }}"
+    port: "{{ item[0].split('/')[0] }}"
+    proto: "{{ item[0].split('/')[1] | lower }}"
+  # merging two lists with ports into a list of directories 
+  # where every element has the value "allow" or "deny"
+  loop: "{{ (fw_open_ports | default([]) | zip_longest([], fillvalue='allow') | list) + (fw_close_ports | default([]) | zip_longest([], fillvalue='deny') | list) }}" # noqa line-length
+  become: true
+  when: ansible_os_family == 'Debian'
+
+- name: open firewall ports on "{{ ansible_os_family }}"-based distro
+  firewalld:
+    port: "{{ item[0].replace(':', '-') if ':' in item[0] else item[0] }}"
+    permanent: true
+    immediate: true
+    state: "{{ item[1] }}"
+    zone: public
+  # merging two lists with ports into a list of directories 
+  # where every element has the value "enabled" or "disabled"
+  loop: "{{ (fw_open_ports | default([]) | zip_longest([], fillvalue='enabled') | list) + (fw_close_ports | default([]) | zip_longest([], fillvalue='disabled') | list) }}" # noqa line-length
+  become: true
+  when: ansible_os_family == 'RedHat'

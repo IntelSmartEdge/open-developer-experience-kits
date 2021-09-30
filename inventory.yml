@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+all:
+  vars:
+    cluster_name: dek_test        # NOTE: Use `_` instead of spaces.
+    deployment: dek               # NOTE: Available deployment type: Developer expirience kits (dek).
+    single_node_deployment: true  # Request single node deployment (true/false).
+    limit:                        # Limit ansible deployment to certain inventory group or hosts
+controller_group:
+  hosts:
+    controller:
+      ansible_host: 172.16.0.1
+      ansible_user: smartedge-open
+edgenode_group:
+  hosts:
+    node01:
+      ansible_host: 172.16.0.1
+      ansible_user: smartedge-open

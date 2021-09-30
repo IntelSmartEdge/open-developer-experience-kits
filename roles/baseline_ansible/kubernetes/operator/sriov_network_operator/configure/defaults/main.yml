@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+# place to store policies and sriov networks for operator
+_sriov_network_config_dir: "{{ _sriov_network_operator_root_dir }}/configs"
+
+# SriovNetworkNodePolicies list
+sriov_network_node_policies: []
+## example of minimum node policy
+#  - name: "minimum-sample-policy"
+#    resource_name: "intel_sriov_netdevice"
+#    num_vfs: 2
+#    vendor: 8086 # Intel vendorId
+#    root_devices: ["<domain>:<bus>:<slot>.<func>"]
+
+# Namespaces to be created for SriovNetworks
+sriov_network_namespaces: []
+
+# SriovNetworks list
+sriov_networks: []
+## example of minimum sriov network
+#  - name: netdevice-network
+#    network_namespace: "default"
+#    resource_name: "intel_sriov_netdevice"
+## example of ipam usage for SriovNetwork if needed
+#    ipam: |-
+#      {
+#      "type": "host-local",
+#      "subnet": "192.168.2.0/24",
+#      "routes": [{
+#        "dst": "0.0.0.0/0"
+#      }],
+#      "gateway": "192.168.2.1"
+#      }
+
+# General variables
+apply_configs_retries: 50
+apply_configs_delay: 10

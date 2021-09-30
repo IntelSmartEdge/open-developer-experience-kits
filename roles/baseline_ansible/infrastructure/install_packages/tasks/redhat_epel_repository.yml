@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install RHEL EPEL repository
+  block:
+    - name: add EPEL GPG key
+      rpm_key:
+        state: present
+        key: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8
+    - name: install EPEL repository
+      package:
+        name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+        state: present
+  become: true
+  when:
+    - not offline_enable | default(false)
+    - ansible_distribution == "RedHat"
+
+- name: install CentOS EPEL package
+  package:
+    name: epel-release
+    state: present
+  become: true
+  when:
+    - not offline_enable | default(false)
+    - ansible_distribution == "CentOS"

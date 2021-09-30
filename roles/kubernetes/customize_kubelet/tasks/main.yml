@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+- name: load OS specific vars
+  include_vars: "{{ ansible_os_family|lower }}.yml"
+
+- name: create config dir
+  file:
+    path: "{{ _kubernetes_config_dir }}"
+    state: directory
+    mode: 0777
+  become: true
+
+- name: create kubelet init config from template
+  template:
+    src: config.yaml.j2
+    dest: "{{ _kubernetes_config_file }}"
+    mode: 0600
+  become: true

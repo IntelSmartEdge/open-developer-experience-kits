@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+k8s_open_ports:
+  - 6443/tcp
+  - 10250:10252/tcp
+
+etcd_ports:
+  - 2379:2380/tcp
+

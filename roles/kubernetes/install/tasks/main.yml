@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: Load OS specific vars
+  include_vars: "{{ ansible_os_family|lower }}.yml"
+
+- name: setup RHEL K8s repository
+  block:
+  - name: import K8s repository
+    yum_repository:
+      name: kubernetes
+      description: Kubernetes repository
+      baseurl: "{{ _kubernetes_repository_url }}"
+      enabled: true
+    register: result
+    retries: "{{ number_of_retries }}"
+    until: result is succeeded
+    delay: "{{ retry_delay }}"
+
+  - name: edit K8s repository
+    yum_repository:
+      name: kubernetes
+      description: Kubernetes repository
+      baseurl: "{{ _kubernetes_repository_url }}"
+      gpgkey: "{{ _kubernetes_repository_keys }}"
+      gpgcheck: true
+      enabled: true
+    register: result
+    retries: "{{ number_of_retries }}"
+    until: result is succeeded
+    delay: "{{ retry_delay }}"
+  become: true
+  when:
+    - ansible_os_family == "RedHat"
+    - not (offline_enable | default(false))
+
+- name: setup Debian K8s repository
+  block:
+  - name: import K8s repo GPG keys
+    apt_key:
+      url: "{{ item }}"
+      state: present
+    with_items: "{{ _kubernetes_repository_keys }}"
+  - name: import K8s repository
+    apt_repository:
+      repo: "{{ _kubernetes_repository_url }}"
+      state: present
+    register: result
+    retries: "{{ number_of_retries }}"
+    until: result is succeeded
+    delay: "{{ retry_delay }}"
+  become: true
+  when:
+    - ansible_os_family == "Debian"
+    - not (offline_enable | default(false))
+
+- name: install packages
+  package:
+    name: "{{ _kubernetes_packages }}"
+    state: present
+    skip_broken: "{{ true if ansible_os_family == 'RedHat' else omit }}"
+    update_cache: true
+    allow_downgrade: "{{ true if ansible_os_family == 'RedHat' else omit }}"
+  become: true
+  register: result
+  retries: 20
+  until: result is succeeded
+  delay: 10
+  notify:
+    - enable and restart kubelet
+
+- name: set up proxy
+  include_tasks: proxy.yml
+
+- name: allow bridged packets to traverse iptables rules
+  block:
+    - name: load br_netfiler module
+      modprobe:
+        name: br_netfilter
+        state: present
+    - name: copy net.bridge.bridge-nf-call-ip(6)tables settings
+      copy:
+        src: sysctl_k8s.conf
+        dest: /etc/sysctl.d/sysctl_k8s.conf
+        mode: preserve
+    - name: get current sysctl vars
+      command: grep 0 /proc/sys/net/bridge/bridge-nf-call-iptables /proc/sys/net/bridge/bridge-nf-call-ip6tables
+      register: sysctl_out
+      failed_when: false
+    - name: refresh sysctl only if desired vars are disabled
+      command: sysctl --system
+      when: sysctl_out.rc == 0
+  become: true
+
+- name: add etcd ports to list
+  set_fact: 
+    k8s_open_ports: "{{ k8s_open_ports + etcd_ports }}"
+  when: etcd_ports_enable
+
+- name: open common kubernetes firewall ports
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports: "{{ k8s_open_ports }}"
+
+- name: restart services if needed
+  meta: flush_handlers
+
+- name: setup kubectl bash completion
+  shell: kubectl completion bash > /etc/bash_completion.d/kubectl
+  changed_when: true
+  become: true
+
+- name: setup kubeadm bash completion
+  shell: kubeadm completion bash > /etc/bash_completion.d/kubeadm
+  changed_when: true
+  become: true

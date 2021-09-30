@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+# CentOS 7.x - RT repo
+
+[rt]
+name=CentOS-7 - rt
+baseurl=http://mirror.centos.org/centos/\$releasever/rt/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7

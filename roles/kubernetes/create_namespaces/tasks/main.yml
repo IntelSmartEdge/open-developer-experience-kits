@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: create custom namespaces for CRD if specified
+  include_role:
+    name: kubernetes/custom_namespace
+  vars:
+    - _custom_ns: [ "{{ system_namespace }}", "{{ application_namespace }}" ]

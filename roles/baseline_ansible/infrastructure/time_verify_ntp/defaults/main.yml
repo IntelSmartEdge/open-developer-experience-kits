@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+date_threshold_seconds: 120
+ntp_time_set: /tmp/ntp_time_set
+reference_host: invalid

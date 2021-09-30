@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+
+- name: set k8s worker node name
+  set_fact:
+    k8s_worker_node_name: "{{ ansible_nodename | lower }}"
+
+- name: remove the node from the cluster
+  block:
+  - name: "[k8s master] drain node"
+    command: kubectl drain {{ k8s_worker_node_name }} --ignore-daemonsets --delete-local-data --timeout=60s
+    delegate_to: "{{ groups['controller_group'][0] }}"
+    failed_when: false
+    changed_when: true
+  - name: "[k8s master] delete node"
+    command: kubectl delete node {{ k8s_worker_node_name }}
+    delegate_to: "{{ groups['controller_group'][0] }}"
+    failed_when: false
+    changed_when: true
+  - name: check if kubeadm is installed
+    shell: command -v kubeadm >/dev/null 2>&1
+    register: kubeadm_exec
+    failed_when: false
+    changed_when: false
+  - name: reset kubeadm on the node
+    command: kubeadm reset --force
+    when: kubeadm_exec.rc == 0
+    become: true

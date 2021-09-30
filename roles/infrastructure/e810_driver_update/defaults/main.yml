@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+_ice_url: "https://downloadmirror.intel.com/29746/ice-1.6.7.tar.gz"
+_iavf_url: "https://downloadmirror.intel.com/24693/eng/iavf-4.2.7.tar.gz"
+_ice_ver: "1.6.7"
+_iavf_ver: "4.2.7"
+_ice_chksm: "md5:37d46b3cc4c9bef7bd80f2fc36879905"
+_iavf_chksm: "md5:95052de96ae2084922ef681e30f18e22"
+_ice_name: "ice"
+_iavf_name: "iavf"
+_mgmt_driver: "tg3"

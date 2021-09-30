@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+
+- name: include Harbor registry vars
+  include_vars: ../../../kubernetes/harbor_registry/controlplane/defaults/main.yml
+
+- name: check if collectd already exists
+  command: helm status collectd -n telemetry
+  failed_when: false
+  changed_when: false
+  register: get_collectd
+
+- name: install collectd if not present
+  block:
+  - name: create certificates for collectd
+    include_tasks: ../../../certs/tasks/create_certificates.yml
+    vars:
+      tls_secret_name: "{{ _proxy_secret_name }}"
+      proxy_name: "{{ _proxy_server_name }}"
+  - name: setup types.db file
+    block:
+    - name: create collectd path
+      file:
+        path: "{{ project_dir }}/collectd"
+        mode: a+r,u+wx
+    - name: download types.db file
+      get_url:
+        url: "{{ _types_db_url }}"
+        dest: "{{ project_dir }}/collectd/types.db"
+    - name: create types.db configmap
+      command: "kubectl create configmap -n telemetry types-db --from-file={{ project_dir }}/collectd/types.db"
+      changed_when: false
+  - name: copy Helm chart to the master node
+    copy:
+      src: "{{ role_path }}/charts/"
+      dest: "{{ _collectd_chart_dir }}"
+      mode: preserve
+      force: true
+  - name: template and copy values.yaml
+    template:
+      src: "values.yaml.j2"
+      dest: "{{ _collectd_chart_dir }}/values.yaml"
+      mode: preserve
+      force: true
+  - name: install collectd using Helm
+    command: "helm install collectd --namespace telemetry {{ _collectd_chart_dir }}"
+    changed_when: true
+  when: get_collectd.rc != 0

@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: prepare {{ ansible_os_family }}-based distro
+  include_tasks: "{{ ansible_os_family | lower }}.yml"
+
+- name: prepare Python
+  include_tasks: prepare_python.yml
+
+- name: install base os and python packages
+  include_role:
+    name: infrastructure/install_dependencies
+  vars:
+    install_dependencies: "{{ os_base_packages | default([]) }}"
+    install_python_dependencies: "{{ python_packages | default([]) }}"
+
+- name: install command line tools to collect hardware details
+  include_role:
+    name: infrastructure/install_dependencies
+  vars:
+    install_dependencies: "{{ hardware_details_tools }}"

@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: harbor-network-policy
+  namespace: harbor
+spec:
+  podSelector:
+    matchLabels:
+      app: harbor
+      release: harbor-app
+      component: nginx
+  policyTypes:
+    - Ingress
+  ingress:
+    # Open only 8443 port (mapped from Node's 30003 and 443 ports)
+    - ports:
+      - protocol: TCP
+        port: 8443

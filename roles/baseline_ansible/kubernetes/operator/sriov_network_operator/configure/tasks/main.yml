@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: load common SR-IOV Network Operator variables
+  include_vars: "{{ role_path }}/../defaults/main.yml"
+
+- name: Configure SR-IOV Network Operator with CRs
+  block:
+  - name: Create directory for sriov network node policies definitions
+    file:
+      path: "{{ _sriov_network_config_dir }}"
+      state: directory
+      owner: "{{ project_user }}"
+      group: "{{ project_group }}"
+      mode: 0755
+    become: true
+
+  - name: template SriovNetworkNodePolicy for operator
+    template:
+      src: "sriov_network_operator_node_policy.yml.j2"
+      dest: "{{ _sriov_network_config_dir }}/{{ item.name }}-sriov_network_node_policy.yml"
+      force: true
+      mode: preserve
+    with_items: "{{ sriov_network_node_policies }}"
+
+  - name: Create namespaces for SriovNetworks if specified
+    include_role:
+      name: kubernetes/custom_namespace
+    vars:
+      - _custom_ns: "{{ sriov_network_namespaces }}"
+    when:
+      - sriov_network_namespaces|length > 0
+      - sriov_networks|length > 0
+
+  - name: template SriovNetwork for operator
+    template:
+      src: "sriov_network_operator_network.yml.j2"
+      dest: "{{ _sriov_network_config_dir }}/{{ item.name }}-sriov_network.yml"
+      force: true
+      mode: preserve
+    with_items: "{{ sriov_networks }}"
+
+  - name: apply sriov network configuration
+    command: kubectl apply -f  ./
+    args:
+      chdir: "{{ _sriov_network_config_dir }}"
+    changed_when: true
+    register: result
+    retries: "{{ apply_configs_retries }}"
+    until: result is succeeded
+    delay: "{{ apply_configs_delay }}"
+  when: sriov_network_node_policies|length > 0 or sriov_networks|length > 0

@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# note: this uses "failed_when: false" for the cases where br_netfilter is built Linux into kernel and not listed as a module
+# please see here for more information: https://github.com/kubernetes/kubernetes/issues/23385
+- name: enable ip-tables bridging
+  block:
+    - name: load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+      failed_when: false
+
+    - name: setup br_netfilter module loading on boot
+      lineinfile:
+        path: /etc/modules-load.d/br_netfilter.conf
+        line: br_netfilter
+        create: true
+        mode: 0644
+      become: true
+
+    - name: enable net.bridge.bridge-nf-call-ip(6)tables settings
+      sysctl:
+        name: "{{ item }}"
+        value: '1'
+        state: present
+        sysctl_set: true
+      loop:
+        - net.bridge.bridge-nf-call-ip6tables
+        - net.bridge.bridge-nf-call-iptables
+  become: true

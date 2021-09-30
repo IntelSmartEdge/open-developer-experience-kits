@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: Install required packages/skopeo
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: download skopeo repo
+  git:
+    repo: "{{ _skopeo.url }}"
+    dest: "{{ _skopeo.download_dir }}"
+    clone: true
+    update: true
+    version: "{{ _skopeo.commit }}"
+    force: true
+  register: result
+  retries: "{{ number_of_retries | default(10) }}"
+  until: result is succeeded
+  delay: "{{ retry_delay | default(5) }}"
+
+- name: Build and install skopeo
+  make:
+    target: "install-binary"
+    chdir: "{{ _skopeo.download_dir }}"
+  environment:
+    PATH: "{{ makefile_env_path_var }}"
+  become: true

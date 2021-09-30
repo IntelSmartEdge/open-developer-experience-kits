@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: activate tuned profile
+  command: tuned-adm profile {{ tuned_profile }}
+  become: true
+  notify:
+    - reboot server

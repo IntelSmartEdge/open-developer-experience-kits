@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+
+- name: Adding kubernetes default CIDR to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + _kubernetes_default_cidr }}"
+
+- name: Adding calico CIDR to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + calico_cidr }}"
+  when: '"calico" in kubernetes_cnis'
+
+- name: Adding ovn4nfv CIDR to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + ovn4nfv_cidr }}"
+  when: '"ovn4nfv" in kubernetes_cnis'
+
+- name: Adding istio_noproxy to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + istio_noproxy }}"
+  when: ne_istio_enable is defined and ne_istio_enable
+
+- name: Create list of SmartEdge hostnames
+  set_fact:
+    _project_hostnames: "{{ groups['all'] | map('extract', hostvars, ['ansible_host']) | list | \
+                             select('defined') | join(',') }}"
+
+- name: Adding SmartEdge machines to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + _project_hostnames }}"
+
+- name: Adding docker_registry_mirrors to noproxy
+  set_fact:
+    _base_noproxy: "{{ _base_noproxy + ',' + (item | urlsplit('hostname') | string) }}"
+  with_items: "{{ docker_registry_mirrors }}"
+  when: docker_registry_mirrors is defined
+
+- name: Adding base noproxy setting to user defined ones
+  set_fact:
+      _base_noproxy: "{{ _base_noproxy + ',' + proxy_env['no_proxy'] }}"
+  when: "'no_proxy' in proxy_env and proxy_env['no_proxy']"
+
+- name: Update no_proxy in proxy_env
+  set_fact:
+    proxy_env: "{{ proxy_env | combine({ 'no_proxy': _base_noproxy }) }}"
+
+- name: Build noproxy result
+  debug:
+    msg: "Final noproxy value: {{ proxy_env['no_proxy'] }}"

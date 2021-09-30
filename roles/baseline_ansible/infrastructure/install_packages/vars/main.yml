@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+os_base_packages:
+  RedHat:
+    - curl
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    - wget
+    - bridge-utils
+    - boost-devel
+    - pcre-devel
+    - zlib-devel
+    - glib2-devel
+    - autoconf
+    - automake
+    - libtool
+    - flex
+    - bison
+    - git
+    - cmake
+    - make
+    - jsoncpp-devel
+    - fcgi-devel
+    - hiredis-devel
+    - numactl-devel
+    - gcc-c++
+    - psmisc
+    - pixman-devel
+    - moreutils
+    - createrepo
+    - sshpass
+    - bash-completion
+    - rsync
+    - lshw
+    - zip
+    - patch
+    - gcc
+    - systemtap
+  Debian:
+    - curl
+    - apt-utils
+    - lvm2
+    - wget
+    - bridge-utils
+    - libboost-all-dev
+    - libpcre3-dev
+    - libpcre++-dev
+    - zlib1g-dev
+    - libglib2.0-dev
+    - autoconf
+    - automake
+    - libtool
+    - flex
+    - bison
+    - git
+    - cmake
+    - make
+    - libjsoncpp-dev
+    - libfcgi-dev
+    - libhiredis-dev
+    - libnuma-dev
+    - g++
+    - psmisc
+    - libpixman-1-dev
+    - moreutils
+    - dpkg-dev
+    - sshpass
+    - bash-completion
+    - rsync
+    - lshw
+    - zip
+    - software-properties-common
+    - build-essential
+    - shtool
+    - patch
+    - gcc
+    - systemtap
+
+
+os_python_packages:
+  python:
+    RedHat:
+      - python-pip
+      - python-websocket-client
+      - python-httplib2
+      - python-devel
+      - python3
+      - python3-pip
+    Debian:
+      - python-pip
+      - python-websocket
+      - python-httplib2
+      - python-dev
+      - python3
+      - python3-pip
+  python3:
+    RedHat:
+      - python3-pip
+      - python3-websocket-client
+      - python3-httplib2
+      - python3-devel
+    Debian:
+      - python3-pip
+      - python3-websocket
+      - python3-httplib2
+      - python3-dev
+
+
+hardware_details_tools:
+  RedHat:
+    - hwinfo
+    - inxi
+    - jq
+    - pciutils
+  Debian:
+    - hwinfo
+    - inxi
+    - jq
+    - pciutils
+
+
+python_packages:
+  - cachetools
+  - openshift-client
+  - openshift

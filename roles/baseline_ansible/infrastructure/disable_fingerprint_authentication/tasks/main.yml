@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: disable fingerprint via authconfig
+  include_tasks: rhel.yml
+  when: ansible_os_family == "RedHat"

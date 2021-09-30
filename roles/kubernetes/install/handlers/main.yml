@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019 Intel Corporation
+
+---
+- name: enable and restart kubelet
+  systemd:
+    name: kubelet
+    daemon_reload: true
+    enabled: true
+    masked: false
+    state: restarted
+  become: true

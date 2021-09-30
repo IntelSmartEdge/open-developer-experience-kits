@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+{% if cgroupfs_enable is defined and cgroupfs_enable %}
+cgroupDriver: "cgroupfs"
+KubeletCgroups: ""
+{% else %}
+cgroupDriver: "systemd"
+KubeletCgroups: "/systemd/system.slice"
+{% endif %}
+authentication:
+  x509:
+    clientCAFile: /etc/kubernetes/pki/ca.crt
+clusterDNS:
+  - 10.96.0.10
+clusterDomain: cluster.local
+podPidsLimit: 4096
+tlsMinVersion: "VersionTLS12"
+tlsCipherSuites: ["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256","TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256","TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384","TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"]
+{% if 'controller_group' not in group_names or single_node_deployment | d(false) %}
+featureGates:
+  TopologyManager: {{ False if topology_manager.policy == 'none' else True }}
+{% if topology_manager is defined and topology_manager.policy is defined and topology_manager.policy != 'none' %}
+topologyManagerPolicy: {{ topology_manager.policy }}
+{% endif %}
+{% if cpu is defined and cpu.policy is defined and cpu.policy == 'static' %}
+cpuManagerPolicy: {{ cpu.policy }}
+reservedSystemCPUs: {{ cpu.reserved_cpus }}
+{% endif %}
+{% endif %}

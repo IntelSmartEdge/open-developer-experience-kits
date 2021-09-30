@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Disable yum plugins
+  lineinfile:
+    dest: /etc/yum.conf
+    regexp: "^plugins=.*"
+    state: absent
+  when: os_remove_yum_plugins
+  become: true
+
+- name: Handle excludes (rpm packages) from /etc/yum.conf
+  block:
+    - name: Remove excludes
+      lineinfile:
+        dest: /etc/yum.conf
+        regexp: "^exclude=.*"
+        state: absent
+    - name: Add excludes
+      lineinfile:
+        dest: /etc/yum.conf
+        line: "{{ os_yum_exclude_rpm_packages }}"
+        insertafter: EOF
+  become: true
+  when:
+    - os_yum_exclude_rpm_packages is defined
+    - os_yum_exclude_rpm_packages|length > 0
+
+- name: enable repositories
+  include_tasks: redhat_enable_repositories.yml
+  when: not offline_enable | default(false)
+
+- name: install kernel devel and sources
+  include_tasks: redhat_install_kernel_headers_and_devel.yml
+  when: not offline_enable | default(false)

@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+- name: set k8s worker node name
+  set_fact:
+    k8s_worker_node_name: "{{ ansible_nodename | lower }}"
+
+- name: check if already in cluster
+  command: kubectl get node {{ k8s_worker_node_name }}
+  register: get_node
+  delegate_to: "{{ groups['controller_group'][0] }}"
+  failed_when: false
+  changed_when: false
+
+- name: join the cluster
+  block:
+    # If playbook failed because kubeadm join failed, then most probably /etc/kubernetes was created
+    # Next execution of the playbook will also fail, because /etc/kubernetes exists
+    # So, since the node is no part of cluster, let's try to delete /etc/kubernetes just in case
+    - name: try to remove /etc/kubernetes
+      file:
+        path: /etc/kubernetes
+        state: absent
+      become: true
+    - name: obtain the join command
+      command: kubeadm token create --print-join-command --ttl=10m --description="token for {{ ansible_nodename }} ({{ ansible_host }})"
+      register: join_command
+      delegate_to: "{{ groups['controller_group'][0] }}"
+    - name: get token
+      shell: >
+        echo '{{ join_command.stdout }}' |
+        awk -F" " ' { print $5 } '
+      register: token
+      ignore_errors: false
+      become: true
+    - name: get discovery-token-ca-cert-hash
+      shell: >
+        echo '{{ join_command.stdout }}' |
+        awk -F" " ' { print $7 } '
+      register: discovery_token_ca_cert_hash
+      ignore_errors: false
+      become: true
+    - name: create JoinConfiguration and update Kubelet config
+      blockinfile:
+        path: "{{ _kubernetes_config_file }}"
+        block: |
+          ---
+          apiVersion: kubeadm.k8s.io/v1beta2
+          caCertPath: /etc/kubernetes/pki/ca.crt
+          discovery:
+            bootstrapToken:
+              apiServerEndpoint: {{ hostvars[groups['controller_group'][0]]['ansible_host'] }}:6443
+              token: "{{ token.stdout }}"
+              caCertHashes: [{{ discovery_token_ca_cert_hash.stdout }}]
+              unsafeSkipCAVerification: true
+            timeout: 5m0s
+          kind: JoinConfiguration
+          nodeRegistration:
+            criSocket: /var/run/dockershim.sock
+            name: {{ k8s_worker_node_name }}
+            taints: null
+      become: true
+    - name: join the cluster
+      command: "kubeadm join --config={{ _kubernetes_config_file }} --v=2"
+      become: true
+  when: get_node.rc == 1
+
+- name: label node as a worker
+  command: kubectl label node {{ k8s_worker_node_name }} node-role.kubernetes.io/worker=worker --overwrite
+  delegate_to: "{{ groups['controller_group'][0] }}"
+  changed_when: true

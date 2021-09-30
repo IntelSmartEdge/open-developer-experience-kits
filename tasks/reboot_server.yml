@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# role `conditional_reboot` checks if `perform_reboot` is defined, is so machine is rebooted
+- name: reboot server
+  set_fact:
+    perform_reboot: true

@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: OS Setup
+  debug:
+    msg: "Setting up OS"
+
+- name: Import disable_swap
+  import_role:
+    name: baseline_ansible/infrastructure/os_requirements/disable_swap
+- name: Import selinux
+  import_role:
+    name: baseline_ansible/infrastructure/selinux
+- name: Import disable_fingerprint_authentication
+  import_role:
+    name: baseline_ansible/infrastructure/disable_fingerprint_authentication
+- include_tasks: reset_connection.yml
+- name: Import configure_udev
+  import_role:
+    name: baseline_ansible/infrastructure/configure_udev
+- name: Import enable_ipv4_forwarding
+  import_role:
+    name: baseline_ansible/infrastructure/os_requirements/enable_ipv4_forwarding
+- name: Import dns_stub_listener
+  include_role:
+
+    name: baseline_ansible/infrastructure/os_requirements/dns_stub_listener
+
+- include_tasks: prepare_directory_tree.yml
+- include_tasks: copy_tls_scripts.yml
+
+
+- name: Include install_packages
+  include_role:
+    name: baseline_ansible/infrastructure/install_packages
+  vars:
+    epel_repository_enabled: true
+    ius_repository_enabled: true
+    powertools_repository_enabled: false
+    elrepo_repository_enabled: "{{ calico_ebpf_enabled | default(false) }}"
+    codeready_linux_builder_repository_enabled: false
+    centos_vault_repository_enabled: false
+
+- name: Import install_openssl
+  import_role:
+    name: baseline_ansible/infrastructure/install_openssl
+  vars:
+    offline_role: "{{ offline_enable | default(False) and ('controller_group' in group_names or single_node_deployment) }}"
+    offline_openssl_download_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
+  # TODO: Installing custom openssl breaks sudo on RHEL, investigate and fix the issue.
+  # After that this condition can be removed.
+  when: ansible_distribution != 'RedHat'
+
+# Removes python-requests yum package for cloud-init enabled systems.
+- include_tasks: reinstall_python_requests_if_needed.yml
+
+- include_tasks: ufw_enable_debian.yml
+  when:
+   - ansible_os_family == "Debian"

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: add group "docker"
+  group:
+    name: docker
+    state: present
+  become: true
+
+- name: Add current user to docker group
+  user:
+    name: "{{ ansible_user }}"
+    groups: "docker,{{ project_group }}"
+    append: true
+  become: true

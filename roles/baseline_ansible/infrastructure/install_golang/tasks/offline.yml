@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: create temp directory for gomods
+  tempfile:
+    state: directory
+    suffix: gomods
+  register: gomods_temp_dir
+
+- name: Download modules if offline mode
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ gomods_temp_dir.path }}"
+  with_items: "{{ offline_gomod_url }}/{{ offline_gomod_file }}"
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+
+- name: Create pkg directory
+  file:
+    state: directory
+    path: "{{ offline_gomod_dest }}"
+    mode: 0755
+
+- name: Populate go mods
+  unarchive:
+    src: "{{ gomods_temp_dir.path }}/gomod.tar.gz"
+    dest: "{{ offline_gomod_dest }}"
+    remote_src: true
+    keep_newer: true

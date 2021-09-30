@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: disable DNSStubListener
+  block:
+    - name: enable systemd-resolved service
+      service:
+        name: systemd-resolved
+        enabled: true
+        state: started
+      become: true
+
+    - name: disable DNSStubListener
+      lineinfile:
+        path: /etc/systemd/resolved.conf
+        regexp: '^#?DNSStubListener='
+        line: DNSStubListener=no
+        mode: 0644
+      become: true
+
+    - name: update /etc/resolv.conf symlink
+      file:
+        src: /run/systemd/resolve/resolv.conf
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        state: link
+        force: true
+        mode: 0644
+      become: true
+
+    - name: restart systemd-resolved service
+      service:
+        name: systemd-resolved
+        state: restarted
+      become: true
+  when:
+    - ansible_distribution == "Ubuntu"
+    - dns_disable_stub_listener | default(true) | bool

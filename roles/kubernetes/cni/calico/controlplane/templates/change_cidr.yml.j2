@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: calico-node
+  namespace: kube-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: calico-node
+          env:
+            - name: CALICO_IPV4POOL_CIDR
+              value: "{{ calico_cidr }}"

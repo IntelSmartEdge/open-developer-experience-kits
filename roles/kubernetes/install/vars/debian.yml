@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+_kubernetes_repository_url: "deb http://apt.kubernetes.io/ kubernetes-xenial main"
+_kubernetes_repository_keys:
+  - https://packages.cloud.google.com/apt/doc/apt-key.gpg
+_kubernetes_ver_separator: "="
+_kubernetes_ver_suffix: "-00"

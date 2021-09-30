@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# disable RSA key fingerprint via authconfig base tool on RHEL and Centos
+- name: disable fingerprint to avoid ssh timeout issues
+  command: authconfig --disablefingerprint --update
+  changed_when: false
+  become: true

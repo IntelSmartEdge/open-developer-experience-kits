@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: install go packages
+  shell: "source /etc/profile && go get -u {{ item.url }}"
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+  with_items: "{{ golang_packages | default([]) }}"
+  when: (item.min_golang_version is not defined) or (golang_version is version_compare(item.min_golang_version, '>='))

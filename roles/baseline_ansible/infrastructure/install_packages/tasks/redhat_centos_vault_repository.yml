@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: ensure /etc/yum.repos.d/CentOS-Vault.repo exists
+  become: true
+  copy:
+    content: ""
+    dest: /etc/yum.repos.d/CentOS-Vault.repo
+    force: false
+    mode: 0644
+    owner: root
+    group: root
+
+- name: update CentOS Vault yum repository on CentOS 7
+  become: true
+  yum_repository:
+    name: C{{ item }}-base
+    description: CentOS-{{ item }} - Base
+    file: CentOS-Vault
+    baseurl: http://vault.centos.org/{{ item }}/os/$basearch/
+    enabled: true
+  loop: "{{ centos7_vaults }}"
+  when:
+    - ansible_distribution_version < '8'
+    - ansible_distribution_version >= item or ansible_distribution_version in item
+
+- name: update CentOS Vault yum repository on CentOS 8
+  become: true
+  yum_repository:
+    name: C{{ full_dist_version }}-base
+    description: CentOS-{{ full_dist_version }} - Base
+    file: CentOS-Vault
+    baseurl: http://vault.centos.org/{{ full_dist_version }}/BaseOS/$basearch/os/
+    enabled: true
+  when:
+    - ansible_distribution_version >= '8'
+    - full_dist_version not in latest_centos_release

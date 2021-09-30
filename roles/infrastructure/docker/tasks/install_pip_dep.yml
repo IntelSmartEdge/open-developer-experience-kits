@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: set local_pip in offline mode
+  set_fact:
+    local_pip: "--no-index --find-links=https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }} \
+--trusted-host {{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
+  when: offline_enable | default(False)
+
+- name: copy requirements.txt
+  copy:
+    src: "{{ _docker_requirements_file }}"
+    dest: /tmp/requirements.txt
+    mode: preserve
+
+- name: install dependencies and docker-compose
+  pip:
+    requirements: /tmp/requirements.txt
+    state: present
+    extra_args: "{{ local_pip | default(omit) }}"
+    executable: pip2
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+  become: true

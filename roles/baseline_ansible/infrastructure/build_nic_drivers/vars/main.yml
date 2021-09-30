@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+install_dependencies:
+  Debian:
+    - build-essential
+    - linux-headers-{{ ansible_kernel }}
+    - libelf-dev
+    - ethtool
+  RedHat:
+    - gcc
+    - elfutils-libelf-devel
+    - ethtool
+
+install_kernel_dependency_yum:
+  - kernel-devel

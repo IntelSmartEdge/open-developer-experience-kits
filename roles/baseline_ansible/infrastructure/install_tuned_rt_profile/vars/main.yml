@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+install_dependencies:
+  RedHat:
+    - tuna
+    - tuned-profiles-realtime
+    - CentOS_7:
+        - tuned-profiles-nfv
+        - tuned-profiles-nfv-host
+        - tuned-profiles-nfv-guest
+  Debian: []

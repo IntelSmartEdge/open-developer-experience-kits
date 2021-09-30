@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: install pip2
+  block:
+    # - name: download get-pip.py #TODO
+    #   shell: "curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py"
+    - name: create temp directory for pip2 installation
+      tempfile:
+        state: directory
+        prefix: pip2-
+      register: pip2_temp_dir
+    - name: download get-pip.py
+      get_url:
+        url: "https://bootstrap.pypa.io/pip/2.7/get-pip.py"
+        dest: "{{ pip2_temp_dir.path }}"
+    - name: install pip
+      command: "python2 {{ pip2_temp_dir.path }}/get-pip.py"
+      become: true
+    - name: change pip version
+      pip:
+        name: pip==20.2.4
+        extra_args: --force-reinstall
+        state: present
+        executable: pip2
+
+- name: add Docker repository and clean cache
+  block:
+    - name: remove repo related files
+      file:
+        path: "{{ item }}"
+        state: absent
+      with_items:
+      - "/usr/share/keyrings/docker-archive-keyring.gpg"
+      - "/etc/apt/sources.list.d/docker.list"
+      changed_when: true
+      become: true
+    - name: get docker repo gpg  # noqa command-instead-of-module
+      shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+      changed_when: true
+      become: true
+    - name: add docker repository
+      shell: >
+        echo
+        "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu
+        $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+      changed_when: true
+      become: true
+
+      # Using cmd to workaround the issue where cache isn't updated using package module
+    - name: update repositories cache
+      command: apt update
+      changed_when: true
+      become: true
+  when: not offline_enable | default(False)

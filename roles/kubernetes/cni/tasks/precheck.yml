@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+- name: fail if no CNI is set up
+  fail:
+    msg: "At least 1 CNI is required"
+  when: kubernetes_cnis|length == 0
+
+- name: fail if calico isn't a primary CNI
+  fail:
+    msg: "Calico is only supported as a primary (main, 1st on the list) CNI"
+  when:
+  - '"calico" in kubernetes_cnis'
+  - kubernetes_cnis[0] != "calico"
+
+- name: fail if calico-ebpf isn't a primary CNI (calico-ebpf works as primary only)
+  fail:
+    msg: "Due to calico-ebpf implementation it is only currently supported as a primary (main, 1st) CNI"
+  when:
+  - '"calico" in kubernetes_cnis'
+  - kubernetes_cnis[0] != "calico"
+  - calico_ebpf_enabled | default(false)
+
+- name: load kubernetes/cni defaults
+  include_vars:
+    file: ../defaults/main.yml
+    name: defaults
+
+- name: fail if requested CNI is not available
+  fail:
+    msg: "Requested CNI is not available: {{ item }}"
+  with_items: "{{ kubernetes_cnis }}"
+  when: "item not in defaults._available_kubernetes_cnis"

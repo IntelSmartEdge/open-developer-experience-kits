@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetworkNodePolicy
+metadata:
+  name: {{ item.name }}
+  namespace: {{ sriov_network_operator_namespace }}
+spec:
+  nodeSelector:
+    sriov-network-operator-node: "yes"
+{% if item.hostname is defined %}
+    kubernetes.io/hostname: {{ item.hostname }}
+{% endif %}
+{% if item.priority is defined %}
+  priority: {{ item.priority }}
+{% endif %}
+{% if item.mtu is defined %}
+  mtu: {{ item.mtu }}
+{% endif %}
+  resourceName: {{ item.resource_name }}
+  numVfs: {{ item.num_vfs }}
+  nicSelector:
+    vendor: "{{ item.vendor }}"
+{% if item.device_id is defined %}
+    deviceID: {{ item.device_id }}
+{% endif %}
+{% if item.pf_names is defined %}
+    pfNames:
+{% for element in item.pf_names %}
+      - "{{ element }}"
+{% endfor %}
+{% endif %}
+{% if item.root_devices is defined %}
+    rootDevices:
+{% for element in item.root_devices %}
+      - "{{ element }}"
+{% endfor %}
+{% endif %}
+{% if item.device_type is defined %}
+  deviceType: {{ item.device_type }}
+{% endif %}
+{% if item.is_rdma is defined %}
+  isRdma: {{ item.is_rdma }}
+{% endif %}
+{% if item.link_type is defined %}
+  linkType: {{ item.link_type }}
+{% endif %}

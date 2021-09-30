@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+_docker_os_dependencies: "device-mapper-persistent-data,lvm2,moreutils,jq"
+
+# docker-compose is installed using pip with requirements file
+_docker_requirements_file: "requirements_centos7.txt"
+
+# Centos 7 requires runc update
+_docker_runc_min_rc: 93
+_docker_runc_ver_pattern: "runc version 1.0.0-rc"
+_docker_runc_url: "https://github.com/opencontainers/runc/releases/download/v1.0.0-rc{{ _docker_runc_min_rc }}/runc.amd64"
+_docker_runc_checksum: "9feaa82be15cb190cf0ed76fcb6d22841abd18088d275a47e894cd1e3a0ee4b6"

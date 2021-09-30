@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+attrs==21.2.0
+backports.shutil-get-terminal-size==1.0.0
+backports.ssl-match-hostname==3.7.0.1
+cached-property==1.5.2
+certifi==2020.12.5
+chardet==4.0.0
+configparser==4.0.2
+contextlib2==0.6.0.post1
+distro==1.5.0
+docker==4.4.4
+docker-compose==1.26.2
+dockerpty==0.4.1
+docopt==0.6.2
+enum34==1.1.10
+functools32==3.2.3.post2
+idna==2.10
+importlib-metadata==2.1.1
+ipaddress==1.0.23
+jsonschema==3.2.0
+pathlib2==2.3.5
+pyrsistent==0.16.1
+python-dotenv==0.17.1
+PyYAML==5.4.1
+requests==2.25.1
+scandir==1.10.0
+six==1.16.0
+subprocess32==3.5.4
+texttable==1.6.3
+typing==3.10.0.0
+urllib3==1.26.5
+websocket-client==0.59.0
+zipp==1.2.0

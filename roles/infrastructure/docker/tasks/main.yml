@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+
+- name: load OS specific vars
+  include_vars: "{{ item }}"
+  with_first_found:
+  - files:
+      - "{{ ansible_distribution|lower }}{{ ansible_distribution_major_version|lower }}.yml"
+      - "{{ ansible_os_family|lower }}.yml"
+
+- name: install docker
+  include_tasks: install.yml
+
+- name: mange docker group
+  include_tasks: manage_group.yml
+
+- name: reset connection
+  meta: reset_connection
+
+- name: update runc version
+  include_tasks: update_runc.yml
+  when: ansible_distribution == "CentOS" and ansible_distribution_major_version == '7'
+
+- name: install pip dependencies
+  include_tasks: install_pip_dep.yml
+
+- name: set up proxy
+  include_tasks: proxy.yml
+  when: >
+    "http_proxy" in proxy_env or
+    "https_proxy" in proxy_env
+
+- name: set cgroups driver to systemd and configure docker registries
+  block:
+    - name: make sure /etc/docker/ exists
+      file:
+        path: /etc/docker/
+        state: directory
+        mode: 0777
+    - name: Generate daemon.json
+      template:
+        src: daemon.json.j2
+        dest: /etc/docker/daemon.json
+        mode: preserve
+      notify:
+        - enable and start docker service
+  become: true
+
+- name: restart services if needed
+  meta: flush_handlers
+
+- name: set audit rules for docker
+  include_tasks: audit.yml
+
+- name: download and load offline docker images
+  include_tasks: offline_images.yml
+  when: offline_enable | default(False)

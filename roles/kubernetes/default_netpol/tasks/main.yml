@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: create default network policy block all ingress
+  block:
+    - name: create temp dir
+      tempfile:
+        state: directory
+        suffix: -default-net-pol
+      register: tmp_dir
+    - name: copy network policy file to remote
+      copy:
+        src: default-network-policy-block-ingress.yaml
+        dest: "{{ tmp_dir.path }}/default-network-policy-block-ingress.yaml"
+        mode: preserve
+    - name: apply default network policy
+      command: kubectl apply -f {{ tmp_dir.path }}/default-network-policy-block-ingress.yaml
+      changed_when: true

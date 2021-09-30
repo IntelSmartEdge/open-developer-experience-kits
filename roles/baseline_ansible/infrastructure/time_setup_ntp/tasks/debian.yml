@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2021 Intel Corporation
+
+---
+- name: set custom ntp servers
+  block:
+    - name: disable default servers
+      lineinfile:
+        dest: /etc/systemd/timesyncd.conf
+        regexp: "^NTP=*"
+        state: absent
+      become: true
+
+    - name: prepare values
+      set_fact:
+        ntp_servers_prepared: "{{ ntp_servers | map('regex_replace', '^(.*)$', 'NTP=\\1') | join('\n') }}"
+
+    - name: add custom ntp server to ntp config
+      blockinfile:
+        path: /etc/systemd/timesyncd.conf
+        block: |
+          {{ ntp_servers_prepared }}
+      become: true
+
+    - name: restart systemd-timesyncd
+      systemd:
+        name: systemd-timesyncd
+        enabled: true
+        masked: false
+        state: restarted
+        daemon_reload: true
+      become: true
+
+    - name: create ntp time set flag
+      file:
+        path: "{{ ntp_time_set }}"
+        state: touch
+        mode: 0644
+  when: (ntp_servers | length) > 0

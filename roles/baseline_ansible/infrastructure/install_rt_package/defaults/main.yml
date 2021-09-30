@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# Default rt_kernel_version: "3.10.0-1160.6.1.rt56.1139.el7.x86_64"
+rt_kernel_version: "*"
+# The latest kernel-rt (CentOS 7.x)
+# rt_kernel_version: "3.10.0-1160.6.1.rt56.1139.el7.x86_64"
+# The latest kernel-rt (CentOS 8)
+# rt_kernel_version: "4.18.0-310.rt7.91.el8.x86_64"
+
+
+# To use kernel-rt repo specified via kernel_rt_repo_url change setup_user_defined_kernel_rt_repo to true
+setup_user_defined_kernel_rt_repo: false
+
+# The latest Centos7 kernel-rt
+kernel_rt_repo_url: http://linuxsoft.cern.ch/cern/centos/7.9.2009/rt/CentOS-RT.repo
+kernel_rt_repo_key: http://linuxsoft.cern.ch/cern/centos/7.9.2009/os/x86_64/RPM-GPG-KEY-cern
+
+retry_delay: 5
+number_of_retries: 3
+
+
+kernel_repo_dest: "/etc/yum.repos.d/CentOS-RT.repo"
+
+
+# The latest Centos7 kernel
+# http://mirror.centos.org/centos/7/os/x86_64/Packages/
+# kernel-3.10.0-1160.el7.x86_64.rpm
+#
+# Corresponding Centos7 kernel-rt  -> Default version
+# http://mirror.centos.org/centos/7/rt/x86_64/Packages/
+# kernel-rt-3.10.0-1160.6.1.rt56.1139.el7.x86_64.rpm
+#
+
+# The kernel-rt for older Centos releases
+# https://vault.centos.org/7.9.2009/rt/x86_64/Packages/
+# still empty
+#
+# https://vault.centos.org/7.8.2003/rt/x86_64/Packages/
+# kernel-rt-3.10.0-1127.rt56.1093.el7.x86_64.rpm
+#
+# https://vault.centos.org/7.6.1810/rt/x86_64/Packages/
+# kernel-rt-3.10.0-957.21.3.rt56.935.el7.x86_64.rpm
+#

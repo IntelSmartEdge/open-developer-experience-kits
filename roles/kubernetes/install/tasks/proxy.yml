@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019 Intel Corporation
+
+---
+- name: create http-proxy.conf for kubelet service
+  block:
+    - name: create kubelet system config directory
+      file:
+        name: /usr/lib/systemd/system/kubelet.service.d/
+        state: directory
+        mode: 0777
+    - name: create http-proxy.conf from template
+      template:
+        src: http-proxy.conf.j2
+        dest: /usr/lib/systemd/system/kubelet.service.d/http-proxy.conf
+        mode: preserve
+      notify:
+        - enable and restart kubelet
+  become: true

@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Build full packages list
+  set_fact:
+    install_dependencies_full_list:
+      "{{
+        install_dependencies[ansible_os_family] | default([]) | select('string') | list +
+        install_dependencies | json_query(distribution_query) | default([]) +
+        install_dependencies | json_query(distribution_major_version_query) | default([]) +
+        install_dependencies | json_query(distribution_version_query) | default([])
+      }}"
+  vars:
+    distribution_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}[][]"
+    distribution_major_version_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}_{{ ansible_distribution_major_version }}[][]"
+    distribution_version_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}_{{ ansible_distribution_version | replace('.','_') }}[][]"
+
+- name: install os packages
+  block:
+    - name: install os packages
+      action: "{{ ansible_pkg_mgr }} name={{ install_dependencies_full_list }} state=present update_cache=yes"
+      register: pkg_mgr_results
+      retries: "{{ number_of_retries | default(3) }}"
+      until: pkg_mgr_results is success
+  become: true
+  when:
+    - install_dependencies_full_list | length>0
+
+- name: force install of excluded packages
+  block:
+    - name: force install of excluded packages with disableexclude
+      action: "{{ ansible_pkg_mgr }} disable_excludes=main name={{ install_excluded_packages }} state=present update_cache=yes"
+      register: pkg_mgr_results
+      retries: "{{ number_of_retries | default(3) }}"
+      until: pkg_mgr_results is success
+  become: true
+  when:
+    - install_excluded_packages is defined
+    - install_excluded_packages | length>0
+    - ansible_os_family == 'RedHat'

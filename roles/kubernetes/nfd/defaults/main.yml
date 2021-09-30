@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+_nfd_image_name: "k8s.gcr.io/nfd/node-feature-discovery"
+_nfd_tag: "v0.8.2"
+
+_nfd_chart_dir: "{{ ne_helm_charts_default_dir }}/node-feature-discovery"
+_nfd_chart_url:
+  "https://raw.githubusercontent.com/kubernetes-sigs/\
+  node-feature-discovery/{{ _nfd_tag }}/deployment/node-feature-discovery"
+
+_nfd_release_name: "nfd-release"
+
+_nfd_chart:
+  - ".helmignore"
+  - "Chart.yaml"
+  - "values.yaml"
+
+_nfd_chart_templates:
+  - "templates/_helpers.tpl"
+  - "templates/clusterrole.yaml"
+  - "templates/clusterrolebinding.yaml"
+  - "templates/master.yaml"
+  - "templates/nfd-worker-conf.yaml"
+  - "templates/service.yaml"
+  - "templates/serviceaccount.yaml"
+  - "templates/worker.yaml"

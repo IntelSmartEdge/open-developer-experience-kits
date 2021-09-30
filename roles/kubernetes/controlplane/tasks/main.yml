@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2020 Intel Corporation
+
+---
+- name: check if cluster exists
+  command: kubectl cluster-info
+  failed_when: false
+  register: cluster_info
+  changed_when: false
+
+- name: initialize cluster
+  block:
+    - name: create kubernetes cluster config
+      template:
+        src: config.yaml.j2
+        dest: "{{ _cluster_config_file }}"
+        mode: 0600
+      become: true
+    - name: assemble kubelet and kubeadm to general config
+      assemble:
+        src: "{{ _kubernetes_config_dir }}"
+        dest: /tmp/config.yaml
+        mode: 0600
+        delimiter: "---"
+      become: true
+    - name: initialize cluster
+      command: kubeadm init --config=/tmp/config.yaml
+      become: true
+    - name: copy cluster admin config(user)
+      block:
+        - name: create .kube dir
+          file:
+            path: .kube
+            state: directory
+            mode: 0700
+        - name: copy kubernetes admin.conf to .kube/config
+          copy:
+            src: /etc/kubernetes/admin.conf
+            dest: .kube/config
+            mode: 0600
+            remote_src: true
+            owner: "{{ ansible_real_user_id }}"
+            group: "{{ ansible_real_group_id }}"
+          become: true
+        - name: remove the taint to be able to schedule Pods on the control-plane node
+          command: kubectl taint nodes --all node-role.kubernetes.io/master-
+          when: single_node_deployment | default(false)
+    - name: copy cluster admin config(root)
+      block:
+        - name: create .kube dir
+          file:
+            path: /root/.kube
+            state: directory
+            mode: 0700
+        - name: copy kubernetes admin.conf to /root/.kube/config
+          copy:
+            src: /etc/kubernetes/admin.conf
+            dest: /root/.kube/config
+            mode: 0600
+            remote_src: true
+      become: true
+  when: cluster_info.rc == 1

@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: check if grub2.cfg config file exists (MBR variant)
+  stat:
+    path: /etc/grub2.cfg
+  register: grub_mbr_cfg
+  changed_when: false
+
+- name: update MBR grub2.cfg
+  command: grub2-mkconfig -o /etc/grub2.cfg
+  changed_when: true
+  become: true
+  when:
+  - grub_mbr_cfg.stat.exists
+  notify:
+    - reboot server
+
+- name: check if grub2-efi.cfg config file exists (EFI variant)
+  stat:
+    path: /etc/grub2-efi.cfg
+  register: grub_efi_cfg
+  changed_when: false
+
+- name: update MBR grub2-efi.cfg
+  command: grub2-mkconfig -o /etc/grub2-efi.cfg
+  changed_when: true
+  become: true
+  when:
+  - grub_efi_cfg.stat.exists
+  notify:
+    - reboot server

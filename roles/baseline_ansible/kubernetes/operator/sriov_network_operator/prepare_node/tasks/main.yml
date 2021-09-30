@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: load common SR-IOV Network Operator variables
+  include_vars: "{{ role_path }}/../defaults/main.yml"
+
+# This label is required for SRIOV Network Operator to work properly
+- name: label SRIOV Network Operator worker node
+  command: "kubectl label node {{ node_name }} {{ _sriov_network_operator_label.name }}={{ _sriov_network_operator_label.value }} --overwrite"
+  delegate_to: "{{ reference_host }}"
+  changed_when: false

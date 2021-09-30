@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+# SR-IOV Network Operator deployment root directory
+_sriov_network_operator_root_dir: "{{ project_dir }}/sriov-network-operator"
+
+# operator namespace
+sriov_network_operator_namespace: "sriov-network-operator"
+
+_sriov_network_operator_label:
+  name: "sriov-network-operator-node"
+  value: "yes"

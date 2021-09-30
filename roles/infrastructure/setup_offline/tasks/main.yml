@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Set offline values
+  set_fact:
+    offline_golang_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
+    offline_gomod_url: https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
+  when: offline_enable | default(false)

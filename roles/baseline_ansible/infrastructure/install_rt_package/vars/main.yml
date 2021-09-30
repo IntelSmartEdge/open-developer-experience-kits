@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+install_dependencies:
+  RedHat:
+    - git
+    - gcc
+    - make
+    - bc
+    - wget
+    - numactl-devel
+    - libhugetlbfs-devel
+    - "@Development tools"
+    - elfutils-libelf-devel
+    - gcc-c++
+    - libhugetlbfs*
+    - libstdc++*
+    - numa*
+    - mlocate
+    - cmake
+    - ncurses-devel
+    - hmaccalc
+    - zlib-devel
+    - binutils-devel
+    - net-tools
+    - libcurl-devel
+  Debian: []
