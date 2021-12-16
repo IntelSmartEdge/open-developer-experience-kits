@@ -7,10 +7,10 @@
   file:
     path: "{{ golang_download_dest }}"
     state: absent
-  become: true
+  become: yes
 
 - name: remove exports from /etc/profile
   file:
     path: /etc/profile.d/golang.sh
     state: absent
-  become: true
+  become: yes

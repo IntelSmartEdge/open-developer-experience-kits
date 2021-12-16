@@ -29,7 +29,7 @@
     - firewall-cmd --direct --permanent --add-rule ipv4 filter FORWARD 0 -m mark --mark 0x10000/0x10000 -m comment --comment "SmartEdge-Calico" -j ACCEPT
     - firewall-cmd --reload
   changed_when: true
-  become: true
+  become: yes
   when: ansible_os_family == "RedHat"
 
 # Due to the fact that the NFTables is used as IPTables backend in RedHat 8, the firewalld performs
@@ -43,7 +43,7 @@
     - "firewall-cmd --permanent --zone=trusted --add-source={{ calico_cidr }}"
     - "firewall-cmd --reload"
   changed_when: true
-  become: true
+  become: yes
   when:
     - ansible_os_family == "RedHat"
     - ansible_distribution_version >= '8'

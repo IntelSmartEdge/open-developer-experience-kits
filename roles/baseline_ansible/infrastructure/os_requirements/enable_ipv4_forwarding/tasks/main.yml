@@ -8,4 +8,4 @@
     value: '1'
     state: present
     sysctl_set: true
-  become: true
+  become: yes

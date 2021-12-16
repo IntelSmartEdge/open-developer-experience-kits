@@ -7,6 +7,9 @@
 {% if "https_proxy" in proxy_env and proxy_env["https_proxy"] | length %}
         "httpsProxy": "{{ proxy_env["https_proxy"] }}",
 {% endif %}
+{% if "all_proxy" in proxy_env and proxy_env["all_proxy"] | length %}
+        "allProxy": "{{ proxy_env["all_proxy"] }}",
+{% endif %}
         "noProxy": "{{ ansible_host }},{{ proxy_env["no_proxy"] }}"
     }
   }

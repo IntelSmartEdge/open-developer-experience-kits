@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+## SR-IOV Network Operator
+sriov_network_operator_enable: false
+
+## SR-IOV Network Operator configuration
+sriov_network_operator_configure_enable: false
+
+# Grafana
+telemetry_grafana_enable: false
+
+# Prometheus
+telemetry_prometheus_enable: false
+
+# Prometheus-statsd-exporter
+telemetry_statsd_exporter_enable: false
+
+# Collectd
+telemetry_collectd_enable: false
+
+# CAdvisor
+telemetry_cadvisor_enable: false
+
+# Disable Harbor Registry
+harbor_registry_enable: false
+
+# Disable Network Edge Node Feature Discovery (NFD)
+ne_nfd_enable: false
+
+e810_driver_enable: false
+
+# Disable SGX
+sgx_enabled: false
+
+# Enable isecl controller instalation
+platform_attestation_controller: true
+
+# Disable installing isecl attestation components for nodes
+platform_attestation_node: false
+
+# List of possible host names for TA. Coma separated list with possible wildcards: *.example.com,192.168.1.*
+isecl_ta_san_list: ""
+
+# Enable PCCS deployment
+pccs_enable: true
+
+# Disable CPU reservation for kubelet
+cpu: {}

@@ -2,7 +2,6 @@
 # Copyright (c) 2020 Intel Corporation
 
 ---
-
 - name: do a precheck
   include_tasks: precheck.yml
 
@@ -15,68 +14,32 @@
   vars:
     cni_weight: 10
 
-- name: wait for harbor registry to ready -- normally take about 30 minutes for slow network
-  block:
-    - name: Wait till all Harbor resources ready  # noqa command-instead-of-shell
-      shell: "{{ item }}"
-      register: status_output
-      retries: 60
-      delay: 60
-      until: status_output.stdout == "0"
-      with_items:
-        - kubectl get sts --no-headers -n harbor | grep 0/1 | wc -l
-        - kubectl get deploy --no-headers -n harbor | grep 0/1 | wc -l
-        - kubectl get pods --no-headers -n harbor | grep -v Running | wc -l
-  rescue:
-    - name: print pod log related to abnormal Deployment and StatefulSet
-      shell: |
-        s0=$(printf '%-50s' ' ')
-        s1=${s0// />}
-        s2=${s0// /<}
-        for i in $(kubectl get "{{ item }}" -n harbor | grep 0/1 | awk '{print $1}')
-        do
-          pod_name=$(kubectl get po -n harbor | grep "${i}" | awk '{print $1}')
-          echo "${s1}[        Describe ${pod_name}        ]${s2}"
-          kubectl describe po "${pod_name}" -n harbor
-          if [ "${i}" != "harbor-app-registry" ]; then
-            echo "${s1}[         Log ${pod_name}            ]${s2}"
-            kubectl logs "${pod_name}" -n harbor
-          fi
-        done
-        exit 1
-      loop:
-      - deploy
-      - sts
-  delegate_to: "{{ groups['controller_group'][0] }}"
-
-
-- name: apply harbor node role
-  include_role:
-    name: "kubernetes/harbor_registry/node"
-
+- name: wait for cluster to go into ready state
+  command: kubectl wait --for=condition=Ready node --all --timeout=200s
+  changed_when: false
+  when: "'controller_group' in group_names"
 
 - name: multiple CNIs
   block:
-  - name: apply meta CNI - multus
-    include_role:
-      name: kubernetes/cni/multus/controlplane
-    when: "'controller_group' in group_names"
+    - name: apply meta CNI - multus
+      include_role:
+        name: kubernetes/cni/multus/controlplane
+      when: "'controller_group' in group_names"
 
-  - name: apply remaining CNIs
-    include_role:
-      name: "kubernetes/cni/{{ cni }}/{{ role_postfix }}"
-    with_items: "{{ kubernetes_cnis[1:] }}"
-    when: "cni + '/' + role_postfix in available_cni_roles"  # run only if 'cni/node_type' is available in the roles/kubernetes/cni/ tree
-    loop_control:
-      loop_var: cni
-      index_var: idx
-    vars:
-      apply_netdef: true
-      cni_weight: "{{ (idx+2) * 10 }}"
+    - name: apply remaining CNIs
+      include_role:
+        name: "kubernetes/cni/{{ cni }}/{{ role_postfix }}"
+      with_items: "{{ kubernetes_cnis[1:] }}"
+      when: "cni + '/' + role_postfix in available_cni_roles" # run only if 'cni/node_type' is available in the roles/kubernetes/cni/ tree
+      loop_control:
+        loop_var: cni
+        index_var: idx
+      vars:
+        apply_netdef: true
+        cni_weight: "{{ (idx+2) * 10 }}"
 
-  - name: apply meta CNI - multus
-    include_role:
-      name: kubernetes/cni/multus/node
-    when: "'edgenode_group' in group_names"
-  when: kubernetes_cnis|length > 1 or
-        sriov_network_operator_enable
+    - name: apply meta CNI - multus
+      include_role:
+        name: kubernetes/cni/multus/node
+      when: "'edgenode_group' in group_names"
+  when: kubernetes_cnis|length > 1 or sriov_network_operator_enable

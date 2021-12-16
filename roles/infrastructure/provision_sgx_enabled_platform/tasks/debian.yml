@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Check if kernel version is 5.11+
+  shell: "set -o pipefail && uname -r | cut -d '.' -f1,2"
+  register: kernel_version
+  changed_when: false
+  failed_when: kernel_version.stdout is version('5.11', '<')
+
+- name: Check if SGX repository exists
+  stat:
+    path: /etc/apt/sources.list.d/intel-sgx.list
+  register: sgx_repo
+
+- name: Add SGX repository and clean cache
+  block:
+    - name: remove repo related files
+      apt_repository:
+        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main
+        state: absent
+      become: yes
+
+    - name: add apt key
+      apt_key:
+        url: https://download.01.org/intel-sgx/sgx_repo/ubuntu/intel-sgx-deb.key
+      become: yes
+
+    - name: add SGX repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main
+      become: yes
+  when: sgx_repo.stat.exists == false
+
+- name: Install tools for SGX provisioning and runtime
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: Copy network configuration for retrieval tool
+  template:
+    src: "network_setting.conf.j2"
+    dest: "{{ network_conf_for_retrieval_tool_dir }}/network_setting.conf"
+    mode: u=rw,g=r,o=r
+  become: yes
+
+- name: Run PCK Cert ID Retrieval Tool
+  command: "PCKIDRetrievalTool"
+  register: provision_tool
+  become: yes
+  changed_when: >
+    "'data has been sent to cache server successfully' in provision_tool.stdout and
+    'pckid_retrieval.csv has been generated successfully' in provision_tool.stdout"
+  failed_when: "'however the data couldn' in provision_tool.stdout"
+
+- name: Copy aesmd configuration file
+  copy:
+    src: "aesmd.conf"
+    dest: "/etc/"
+    mode: u=rw,g=r,o=r
+  become: yes
+
+- name: Restart aesmd service
+  service:
+    name: aesmd
+    state: restarted
+  become: yes
+
+- name: Copy configuration file for quote provider library
+  template:
+    src: "sgx_default_qcnl.conf.j2"
+    dest: "/etc/sgx_default_qcnl.conf"
+    mode: u=rw,g=r,o=r
+  become: yes
+

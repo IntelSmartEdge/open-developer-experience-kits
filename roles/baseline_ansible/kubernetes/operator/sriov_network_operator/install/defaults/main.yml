@@ -7,11 +7,12 @@
 _sriov_network_operator:
   url: "https://github.com/k8snetworkplumbingwg/sriov-network-operator"
   download_dir: "{{ _sriov_network_operator_root_dir }}/src"
-  commit: "c608feee2dd74b4b99e44d4950b3651040e68a65"  # https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/147
+  commit: "ff8c2f1e912b42b45bc2f4591c4d3a4749ae9574"  # https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/147
   image_tag: "4.9.0"
   resource_prefix: "intel.com"
   enable_admission_controller: "true"
   git_patch: "sriov_network_operator.patch"
+  git_webhook_patch: "sriov_no_webhook.patch"
 
 # Webhooks certificates values
 _sriov_network_operator_certs_dest: "{{ project_dir }}/certs/sriov-network-operator"
@@ -23,9 +24,3 @@ _network_resources_injector_certs_dir: "{{ _sriov_network_operator_certs_dest }}
 makefile_env_path_var: "/usr/local/go/bin:{{ ansible_env.PATH }}"
 patching_retries: 30
 patching_delay: 10
-
-# skopeo variables
-_skopeo:
-  url: "https://github.com/containers/skopeo"
-  download_dir: "{{ ansible_env.HOME }}/go/src/github.com/containers/skopeo"
-  commit: "v1.4.1"

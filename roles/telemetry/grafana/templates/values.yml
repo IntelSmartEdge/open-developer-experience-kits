@@ -47,28 +47,23 @@ sidecar:
 
 extraContainers: |
   - name: proxy
-    image: nginx:alpine
+    image: "{{ _proxy_image }}:{{ _proxy_image_tag }}"
     volumeMounts:
     - name: proxy-config
       mountPath: /etc/nginx/nginx.conf
       subPath: nginx.conf
     - name: certs
-      mountPath: /opt/grafana/certs/
-    securityContext:
-      runAsUser: 0
-      runAsNonRoot: false
+      mountPath: /opt/grafana/certs
     ports:
     - name: proxy-web
       containerPort: 3200
+    securityContext:
+      runAsUser: {{ _proxy_user_id }}
 
 extraContainerVolumes:
   - name: certs
-    projected:
-        sources:
-          - secret:
-              name: root-ca
-          - secret:
-              name: "{{ _proxy_secret_name }}"
+    secret:
+      secretName: "{{ _proxy_secret_name }}"
   - name: proxy-config
     configMap:
       name: grafana-configmap
@@ -79,6 +74,7 @@ proxy:
   secretName: "{{ _proxy_secret_name }}"
   internalPort: 3000
   configMap: grafana-configmap
+  certsDest: /opt/grafana/certs
   protocols: TLSv1.2 TLSv1.3
   ciphers:
     - "TLS_AES_256_GCM_SHA384"

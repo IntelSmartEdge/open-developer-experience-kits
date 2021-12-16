@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: set sriov kernel flags
+  set_fact:
+    iommu_cmdline: 'GRUB_CMDLINE_LINUX="${GRUB_CMDLINE_LINUX} intel_iommu=on iommu=pt" {{ sriov_marker }}'
+
+- name: set sriov kernel flags in /etc/default/grub
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX="\${GRUB_CMDLINE_LINUX}(.*?)" {{ sriov_marker }}$'
+    line: '{{ iommu_cmdline }}'
+    state: present
+    mode: a=r,u+w,g+w
+  register: grub
+  become: yes

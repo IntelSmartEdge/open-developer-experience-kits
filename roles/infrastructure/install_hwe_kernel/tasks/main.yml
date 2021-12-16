@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- block:
+    - name: install hwe-kernel
+      include_tasks: install_hwe_kernel.yml
+      when:
+        - "install_hwe_kernel_enable | default(False)"
+
+    - name: get mainline kernel version
+      shell: set -o pipefail && dpkg --list | grep linux-image-5.13 | awk '{print $2}' | cut -f3-5 -d "-"
+      args:
+        warn: false
+      register: hwe_kernel_version
+      changed_when: false
+      when:
+        - "install_hwe_kernel_enable | default(False)"
+
+    - name: get booted kernel version
+      command: uname -r
+      register: booted_kernel_version
+      changed_when: false
+      when:
+        - "not install_hwe_kernel_enable | default(True)"
+
+    - name: gather kernel to set
+      set_fact:
+        kernel: "{% if install_hwe_kernel_enable %}{{ hwe_kernel_version.stdout }}{% else %}{{ booted_kernel_version.stdout }}{% endif %}"
+
+    - name: set default kernel
+      include_tasks: set_default_kernel.yml
+      vars:
+        kernel_to_set: "{{ kernel }}"
+  when:
+    - ansible_os_family == 'Debian'

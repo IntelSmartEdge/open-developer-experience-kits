@@ -4,6 +4,6 @@
 ---
 - name: activate tuned profile
   command: tuned-adm profile {{ tuned_profile }}
-  become: true
+  become: yes
   notify:
     - reboot server

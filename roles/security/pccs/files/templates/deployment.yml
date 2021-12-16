@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $key, $value := $.Values.matchLabels }}
+      {{ $key }}: {{ toYaml $value }}
+      {{- end }}
+  template:
+    metadata:
+      labels:
+        {{- range $key, $value := $.Values.matchLabels }}
+        {{ $key }}: {{ toYaml $value }}
+        {{- end }}
+    spec:
+      containers:
+        - name: {{ .Values.container.name }}
+          image: "{{ .Values.container.image }}:{{ .Values.container.tag }}"
+          imagePullPolicy: Never # The image is built locally on controlplane
+          volumeMounts:
+            - name: {{ .Values.container.certs.volumeName }}
+              mountPath: {{ .Values.container.certs.dest }}
+            - name: {{ .Values.configmap.name }}
+              mountPath: {{ .Values.container.config.dest }}
+              subPath: {{ .Values.container.config.filename }}
+          ports:
+            - containerPort: {{ .Values.container.port }}
+      volumes:
+        - name: {{ .Values.container.certs.volumeName }}
+          secret:
+            secretName: {{ .Values.container.certs.certSecretName }}
+            items:
+            - key: tls.key
+              path: private.pem
+            - key: tls.crt
+              path: file.crt
+        - name: {{ .Values.configmap.name }}
+          configMap:
+            name: {{ .Values.configmap.name }}
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/master
+          operator: Exists

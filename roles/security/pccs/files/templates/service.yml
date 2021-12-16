@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: NodePort
+  selector:
+    {{- range $key, $value := $.Values.matchLabels }}
+    {{ $key }}: {{ toYaml $value }}
+    {{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.container.port }}
+      targetPort: {{ .Values.container.port }}
+      protocol: TCP
+      nodePort: {{ .Values.service.nodePort }}

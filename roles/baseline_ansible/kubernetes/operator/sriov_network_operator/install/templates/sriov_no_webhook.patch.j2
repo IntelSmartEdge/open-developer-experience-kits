@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+diff --git a/deploy/configmap.yaml b/deploy/configmap.yaml
+index 7e02a78f..3c944f06 100644
+--- a/deploy/configmap.yaml
++++ b/deploy/configmap.yaml
+@@ -11,6 +11,7 @@ data:
+   Intel_ice_Columbiaville_E810-CQDA2_2CQDA2: "8086 1592 1889"
+   Intel_ice_Columbiaville_E810-XXVDA4: "8086 1593 1889"
+   Intel_ice_Columbiaville_E810-XXVDA2: "8086 159b 1889"
++  Intel_ice_Ethernet_Connection_E823-C_for_backplane: "8086 188a 1889"
+   Nvidia_mlx5_ConnectX-4: "15b3 1013 1014"
+   Nvidia_mlx5_ConnectX-4LX: "15b3 1015 1016"
+   Nvidia_mlx5_ConnectX-5: "15b3 1017 1018"
+diff --git a/deployment/sriov-network-operator/templates/configmap.yaml b/deployment/sriov-network-operator/templates/configmap.yaml
+index 7e02a78f..b86fa993 100644
+--- a/deployment/sriov-network-operator/templates/configmap.yaml
++++ b/deployment/sriov-network-operator/templates/configmap.yaml
+@@ -11,6 +11,7 @@ data:
+   Intel_ice_Columbiaville_E810-CQDA2_2CQDA2: "8086 1592 1889"
+   Intel_ice_Columbiaville_E810-XXVDA4: "8086 1593 1889"
+   Intel_ice_Columbiaville_E810-XXVDA2: "8086 159b 1889"
++  Intel_ice_Ethernet_Connection_E823-C_for_backplane: "8086 188a 1889"
+   Nvidia_mlx5_ConnectX-4: "15b3 1013 1014"
+   Nvidia_mlx5_ConnectX-4LX: "15b3 1015 1016"
+   Nvidia_mlx5_ConnectX-5: "15b3 1017 1018"

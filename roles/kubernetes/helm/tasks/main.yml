@@ -6,7 +6,7 @@
   file:
     path: "{{ ne_helm_charts_default_dir }}"
     state: directory
-    mode: 0777
+    mode: a=rx,u+w
 
 - name: check whether helm exist
   block:
@@ -30,8 +30,7 @@
     register: helm_tmp_dir
   - name: download
     get_url:
-      url: "{{ 'https://' + hostvars[groups['controller_group'][0]]['ansible_host'] + '/' + _helm_download_item \
-            if (offline_enable | default(false)) else _helm_download_url + '/' + _helm_download_item }}"
+      url: "{{ _helm_download_url + '/' + _helm_download_item }}"
       dest: "{{ helm_tmp_dir.path }}/{{ _helm_download_item }}"
     register: helm_download_result
     retries: "{{ number_of_retries }}"
@@ -48,7 +47,7 @@
       dest: "{{ _helm_binary_path }}"
       mode: preserve
       remote_src: true
-    become: true
+    become: yes
   - name: remove downloaded package
     file:
       path: "{{ helm_tmp_dir.path }}/{{ _helm_download_item }}"

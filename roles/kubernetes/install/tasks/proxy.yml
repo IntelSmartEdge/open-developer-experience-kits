@@ -8,7 +8,7 @@
       file:
         name: /usr/lib/systemd/system/kubelet.service.d/
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
     - name: create http-proxy.conf from template
       template:
         src: http-proxy.conf.j2
@@ -16,4 +16,4 @@
         mode: preserve
       notify:
         - enable and restart kubelet
-  become: true
+  become: yes

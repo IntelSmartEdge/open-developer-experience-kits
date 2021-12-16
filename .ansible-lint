@@ -7,13 +7,10 @@ skip_list:
   - 'indentation'
 
 exclude_paths:
-  - roles/telemetry/certs/files/
   - roles/telemetry/collectd/controlplane/files/
   - roles/telemetry/collectd/node/files/
   - roles/telemetry/prometheus/files/
-  - roles/telemetry/tas/files/
   - roles/telemetry/statsd-exporter/files
-  - roles/telemetry/opentelemetry/controlplane/charts
   - roles/kubernetes/dashboard/files
   - roles/nfd/files/
   - roles/bb_config/charts

@@ -1,0 +1,69 @@
+# Copyright (C) 2021  Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.appName }}
+    env: test
+  name: {{ .Values.appName }}-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+    spec:
+      tolerations:
+       - key: {{ .Values.tolerations.key }}
+         operator: Exists
+         effect: NoSchedule
+      affinity:
+       nodeAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+           nodeSelectorTerms:
+             - matchExpressions:
+                -
+                 key: {{ .Values.affinity.key }}
+                 operator: Exists
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+      initContainers:
+        - image: {{ .Values.initContainer.image }}:{{ .Values.initContainer.tag }}
+          imagePullPolicy: {{ .Values.initContainer.pullPolicy }}
+          name: {{ .Values.initContainer.name }}
+          command:
+            - /bin/chown
+            - -R
+            - "1001"
+            - /var/log/isecl-k8s-extensions
+          volumeMounts:
+            - name: controller-log
+              mountPath: /var/log/isecl-k8s-extensions
+      containers:
+        - name: isecl-controller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+          env:
+            - name: TAINT_UNTRUSTED_NODES
+              value: "{{ .Values.env.taint_untrusted_nodes }}"
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.log_level }}"
+            - name: TAG_PREFIX
+              value: "{{ .Values.env.tag_prefix }}"
+          volumeMounts:
+          - mountPath: {{ .Values.volume.path }}
+            name: controller-log
+      volumes:
+        - hostPath:
+            path: {{ .Values.volume.path }}
+            type: DirectoryOrCreate
+          name: controller-log

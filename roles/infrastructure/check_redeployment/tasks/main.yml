@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: check if lock file exists
+  stat:
+    path: "{{ _redeplyoment_lock_file }}"
+  register: redeplyoment_lock_file_stat
+
+- name: Print warning in case of redeployment
+  debug:
+    msg: 
+      - "WARNING! It looks like this is not a clean deployment."
+      - "Redeployment may not work."
+      - "Use clean setup for deployment."
+  when: redeplyoment_lock_file_stat.stat.exists
+
+- name: Create lock file with current date
+  lineinfile:
+    dest: "{{ _redeplyoment_lock_file }}"
+    state: present
+    line: "{{ ansible_date_time.iso8601_micro }}"
+    create: true
+    mode: a=r,u+w
+  when: not redeplyoment_lock_file_stat.stat.exists

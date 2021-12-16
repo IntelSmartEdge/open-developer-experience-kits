@@ -40,27 +40,8 @@ ensure_installed () {
   fi
 }
 
-# Check the value of offline_enable
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-TOP_PATH="$SCRIPT_DIR/.."
-if grep "offline_enable" "$TOP_PATH"/inventory/default/group_vars/all/*.yml | grep -qE "[T|t]rue"; then
-  prepackagePath=""
-  if [ -e "${TOP_PATH}/roles/offline_roles/unpack_offline_package/files/prepackages.tar.gz" ]; then
-     prepackagePath="${TOP_PATH}/roles/offline_roles/unpack_offline_package/files/prepackages.tar.gz"
-  elif [ -e "${TOP_PATH}/../roles/offline_roles/unpack_offline_package/files/prepackages.tar.gz" ]; then
-     prepackagePath="${TOP_PATH}/../roles/offline_roles/unpack_offline_package/files/prepackages.tar.gz"
-  else
-    echo "ERROR: Miss package: roles/offline_roles/unpack_offline_package/files/prepackages.tar.gz!"
-    exit 1
-  fi
-  tmpDir=$(mktemp -d)
-  tar xvf "$prepackagePath" -C "$tmpDir"
-  sudo yum localinstall -y "$tmpDir"/*
-  rm -rf "$tmpDir"
-else
-  # EPEL repository
-  ensure_installed epel-release
-fi
+# EPEL repository
+ensure_installed epel-release
 
 # Python 3
 ensure_installed $PYTHON3_PKG $PYTHON3_VERSION

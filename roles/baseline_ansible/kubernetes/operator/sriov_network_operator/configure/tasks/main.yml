@@ -14,8 +14,8 @@
       state: directory
       owner: "{{ project_user }}"
       group: "{{ project_group }}"
-      mode: 0755
-    become: true
+      mode: a=rx,u+w
+    become: yes
 
   - name: template SriovNetworkNodePolicy for operator
     template:
@@ -29,9 +29,8 @@
     include_role:
       name: kubernetes/custom_namespace
     vars:
-      - _custom_ns: "{{ sriov_network_namespaces }}"
+      - _custom_ns: "{{ sriov_networks | default([]) | map(attribute='network_namespace') | unique | list }}"
     when:
-      - sriov_network_namespaces|length > 0
       - sriov_networks|length > 0
 
   - name: template SriovNetwork for operator

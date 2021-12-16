@@ -11,6 +11,7 @@ metadata:
 data:
   nginx.conf: |-
     worker_processes  1;
+    pid /tmp/nginx.pid;
 
     events {
         worker_connections  1024;
@@ -27,7 +28,7 @@ data:
             server_name            {{ .Values.proxy.serverName }};
             ssl_certificate        {{ .Values.proxy.certsDest }}/tls.crt;
             ssl_certificate_key    {{ .Values.proxy.certsDest }}/tls.key;
-            ssl_client_certificate {{ .Values.proxy.certsDest }}/root.pem;
+            ssl_client_certificate {{ .Values.proxy.certsDest }}/ca.crt;
             ssl_protocols          {{ .Values.proxy.protocols }};
             ssl_ciphers            {{ join ":" .Values.proxy.ciphers }};
             ssl_verify_client      on;

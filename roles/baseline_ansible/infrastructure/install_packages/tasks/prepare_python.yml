@@ -12,7 +12,7 @@
     install_dependencies: "{{ os_python_packages[python_interpreter] }}"
 
 - name: Set python to python3
-  become: true
+  become: yes
   alternatives:
     name: python
     path: /usr/bin/python3
@@ -21,13 +21,13 @@
     - python_interpreter == 'python3'
 
 - name: update pip to specified version
-  become: true
+  become: yes
   pip:
     name: pip
     version: "{{ pip_version }}"
 
 - name: upgrade Python wheel and setuptools
-  become: true
+  become: yes
   pip:
     name:
       - "wheel=={{ python_wheel_version }}"

@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2020 Intel Corporation
+# Copyright (c) 2020-2021 Intel Corporation
 
 # Tested on v3.3 and v3.4.1 versions. With newer versions some changes in chart might be required
-_multus_image_tag: v3.7.1
+_multus_image_tag: v3.8
 _multus_image_name: ghcr.io/k8snetworkplumbingwg/multus-cni
+_multus_release_version: v3.8
+_multus_cni_url: 
+  "https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/\
+  {{ _multus_release_version }}/images/"

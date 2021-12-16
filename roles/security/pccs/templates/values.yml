@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+namespace: {{ _pccs_namespace }}
+
+matchLabels:
+  app: pccs
+
+container:
+  name: pccs
+  image: {{ _pccs_image_name }}
+  tag: {{ _pccs_image_tag }}
+  certs:
+    volumeName: pccs-certs
+    certSecretName: {{ _pcss_certificate_secret_name }}
+    dest: /opt/intel/pccs/ssl_key
+  port: 8081
+  config:
+    dest: /opt/intel/pccs/config/default.json
+    filename: default.json
+
+secret:
+  name: pccs-pass
+  userPassword: {{ pccs_user_password | b64encode }}
+  adminPassword: {{ pccs_admin_password | b64encode }}
+
+configmap:
+  name: pccs-cm
+  port: 8081
+  hosts: "0.0.0.0"
+  apiKey: {{ pccs_api_key }}
+  proxy: {{ proxy_env.https_proxy | d("") }}
+  userPassword: {{ pccs_user_password | hash('sha512') }} # Do not add salt to the password
+  adminPassword: {{ pccs_admin_password | hash('sha512') }} # Do not add salt to the password
+
+service:
+  nodePort: {{ pccs_access_port }}

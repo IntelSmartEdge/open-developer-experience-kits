@@ -9,15 +9,15 @@
         name: systemd-resolved
         enabled: true
         state: started
-      become: true
+      become: yes
 
     - name: disable DNSStubListener
       lineinfile:
         path: /etc/systemd/resolved.conf
         regexp: '^#?DNSStubListener='
         line: DNSStubListener=no
-        mode: 0644
-      become: true
+        mode: a=r,u+w
+      become: yes
 
     - name: update /etc/resolv.conf symlink
       file:
@@ -27,14 +27,14 @@
         group: root
         state: link
         force: true
-        mode: 0644
-      become: true
+        mode: a=r,u+w
+      become: yes
 
     - name: restart systemd-resolved service
       service:
         name: systemd-resolved
         state: restarted
-      become: true
+      become: yes
   when:
     - ansible_distribution == "Ubuntu"
     - dns_disable_stub_listener | default(true) | bool

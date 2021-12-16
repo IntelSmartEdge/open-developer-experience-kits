@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+resources:
+- kube-scheduler.yaml
+
+patchesJson6902:
+- target:
+    version: v1
+    kind: Pod
+    name: kube-scheduler
+  path: extensions-scheduler-patch.yml

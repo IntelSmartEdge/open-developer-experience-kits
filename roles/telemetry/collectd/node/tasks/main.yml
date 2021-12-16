@@ -53,7 +53,7 @@
       copy:
         src: "{{ item }}"
         dest: "{{ project_dir }}/collectd/configs/"
-        mode: 0755
+        mode: a=rx,u+w
       with_items:
         - ovs_pmd_stats.sh
         - write_notification.sh

@@ -2,23 +2,21 @@
 # Copyright (c) 2021 Intel Corporation
 
 ---
-
-- name: include certs variables
-  include_vars: ../../certs/defaults/main.yml
-
 - name: check if prometheus-statsd-exporter already exists
-  command: helm status statsd-exporter -n telemetry
+  command: helm status statsd-exporter -n {{ telemetry_namespace }}
   ignore_errors: true
   changed_when: false
   register: get_statsd_exporter
 
 - name: install prometheus-statsd-exporter chart
   block:
-    - name: create certificates for collectd
-      include_tasks: ../../certs/tasks/create_certificates.yml
+    - name: create certificates for Statsd-exporter
+      include_role:
+        name: kubernetes/certs
       vars:
         tls_secret_name: "{{ _proxy_secret_name }}"
-        proxy_name: "{{ _proxy_server_name }}"
+        desired_namespace: "{{ telemetry_namespace }}"
+        dns_names: ['statsd-exporter']
     - name: create temporary directory
       tempfile:
         state: directory
@@ -29,13 +27,13 @@
       template:
         src: values.yml.j2
         dest: "{{ tmp_dir.path }}/values.yml"
-        mode: a+r,u+w
+        mode: a=r,u+w
 
     - name: create prometheus-statsd-exporter chart template directory
       file:
         name: "{{ item }}"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       loop:
         - "{{ _statsd_exporter_chart_dir }}"
         - "{{ _statsd_exporter_chart_dir }}/templates"
@@ -44,7 +42,7 @@
       get_url:
         url: "{{ _statsd_exporter_chart_url }}/{{ item }}"
         dest: "{{ _statsd_exporter_chart_dir }}"
-        mode: 0666
+        mode: a=rw
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
@@ -55,7 +53,7 @@
       file:
         state: directory
         path: "{{ _statsd_exporter_chart_dir }}/{{ item | dirname }}"
-        mode: 0777
+        mode: a=rx,u+w
       loop: "{{ _statsd_exporter_chart_templates }}"
 
     - name: download prometheus-statsd-exporter chart templates
@@ -90,7 +88,7 @@
       changed_when: true
 
     - name: install prometheus-statsd-exporter release
-      command: "helm install statsd-exporter --namespace telemetry -f {{ tmp_dir.path }}/values.yml {{ _statsd_exporter_chart_dir }}"
+      command: "helm install statsd-exporter --namespace {{ telemetry_namespace }} -f {{ tmp_dir.path }}/values.yml {{ _statsd_exporter_chart_dir }}"
       changed_when: true
 
     - name: remove temporary directory

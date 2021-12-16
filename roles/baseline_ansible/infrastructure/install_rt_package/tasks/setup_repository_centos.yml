@@ -14,13 +14,13 @@
       get_url:
         url: "{{ kernel_rt_repo_url }}"
         dest: "{{ kernel_repo_dest }}"
-        mode: 0644
+        mode: a=r,u+w
         force: true
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
       delay: "{{ retry_delay }}"
-      become: true
+      become: yes
 
     - name: find out place for GPG key
       command: awk -F'=' '/gpgkey/ {gsub("file://", ""); print $2; exit;}' {{ kernel_repo_dest }}
@@ -41,19 +41,19 @@
       get_url:
         url: "{{ kernel_rt_repo_key }}"
         dest: "{{ repo_gpg_filepath }}"
-        mode: 0644
+        mode: a=r,u+w
         force: true
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
       delay: "{{ retry_delay }}"
-      become: true
+      become: yes
 
     - name: setup repository for kernel-rt | import GPG key
       rpm_key:
         state: present
         key: "{{ repo_gpg_filepath }}"
-      become: true
+      become: yes
 
   when:
     - setup_user_defined_kernel_rt_repo

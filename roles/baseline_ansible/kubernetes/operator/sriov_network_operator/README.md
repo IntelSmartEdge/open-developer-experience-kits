@@ -78,10 +78,8 @@ sriov_networks:
     capabilities: # set capabilities
 ```
 
-If `SriovNetwork` should be created in not yet existing namespace, list `sriov_network_namespaces` with desired namespace/s should be defined as well.
 > **NOTE:** For minimum defined sample `SriovNetwork` please refer to role defaults - `./configure/defaults/main.yml`.
 
 > **NOTE:** more details about these parameters [link](https://docs.openshift.com/container-platform/4.7/networking/hardware_networks/configuring-sriov-net-attach.html)
 
-If `SriovNetwork` is applied to some custom non existing namespace/s, this role is capable to create required namespace/s by defining `sriov_network_namespaces` list.
-> **NOTE:** if `SriovNetwork` is applied to non existing namespace/s, the Network Attachment Definitions required by CNI won't be created.
+If `SriovNetwork` is applied to some custom non existing namespace/s, this role is capable to create required namespace/s based on unique list of all `network_namespace` values.

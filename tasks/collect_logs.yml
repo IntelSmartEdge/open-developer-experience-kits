@@ -9,14 +9,14 @@
       dest: "{{ ansible_facts.user_dir }}/log_collector{{ item.ext }}"
       mode: "{{ item.mode }}"
     with_items:
-    - {ext: "", mode: "0755"}
-    - {ext: ".json", mode: "0644"}
+    - {ext: "", mode: "a=rx,u+w"}
+    - {ext: ".json", mode: "a=r,u+w"}
 
   - name: collect logs
     command: "{{ ansible_facts.user_dir }}/log_collector --force"
     args:
       chdir: "{{ ansible_facts.user_dir }}"
-    become: true
+    become: yes
 
   - name: create var for filename
     set_fact:

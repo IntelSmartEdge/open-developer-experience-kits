@@ -13,15 +13,10 @@
   lineinfile:
     path: /etc/audit/rules.d/docker.rules
     line: "-w {{ item.item }} -k docker"
-    mode: 0666
+    mode: a=rw
     create: true
-  become: true
+  become: yes
   when: item.stat.exists
   with_items: "{{ stats.results }}"
-
-- name: restart auditd
-  command: service auditd restart
-  become: true
-  changed_when: true
-  args:
-    warn: false
+  notify:
+    - restart auditd

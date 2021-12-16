@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+- name: Check if requested certificate exists
+  command: kubectl get certificate/{{ tls_secret_name }} -n {{ desired_namespace }}
+  failed_when: false
+  changed_when: false
+  register: cert_query
+
+- name: Create certificate
+  block:
+    - name: Get ip addresses of kubernetes nodes
+      command: kubectl get nodes -o wide -o=custom-columns=ip:.status.addresses[0].address --no-headers # Internal IPs
+      register: nodes_ips
+      changed_when: false
+
+    - name: parse output into variable
+      set_fact:
+        ips: "{{ nodes_ips.stdout.split('\n') }}"
+
+    - name: Create temporary file
+      tempfile:
+        state: file
+      register: _temporary_path
+
+    - name: Template certificate CRD
+      template:
+        src: certificate.yaml.j2
+        dest: "{{ _temporary_path.path }}"
+        mode: u+rw
+        force: true
+
+    - name: Apply certificate CRD
+      command: kubectl apply -f "{{ _temporary_path.path }}"
+      changed_when: true
+
+    - name: Remove unused file
+      file:
+        path: "{{ _temporary_path }}"
+        state: absent
+  when: cert_query.rc != 0

@@ -1,0 +1,119 @@
+# Copyright (C) 2021  Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+{{- if .Values.suefi.enabled -}}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.daemonSetName }}-daemonset-suefi
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.daemonSetName }}-suefi
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.daemonSetName }}-suefi
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.daemonSetName }}-suefi
+    spec:
+      affinity:
+        nodeAffinity:
+          {{- toYaml .Values.affinity.suefiNodeAffinity | nindent 10 }}
+      containers:
+        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          name: ta-suefi
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            {{- toYaml .Values.ports | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.daemonSetName }}-config
+          env:
+             {{- toYaml .Values.proxyConfig | nindent 12 }}
+          volumeMounts:
+            - name: ta-logs-volume
+              mountPath: {{ .Values.volumeConfiguration.taLogsVolume.mountPath }}
+            - name: ta-config-volume
+              mountPath: {{ .Values.volumeConfiguration.taConfigVolume.mountPath }}
+            - name: tpmrm
+              mountPath: {{ .Values.volumeConfiguration.tpmrm.mountPath }}
+            - name: ta-hostname-path
+              mountPath: {{ .Values.volumeConfiguration.taHostnamePath.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taHostnamePath.readOnly }}
+            - name: ta-hosts-path
+              mountPath: {{ .Values.volumeConfiguration.taHostsPath.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taHostsPath.readOnly }}
+            - name: ta-host-os-path
+              mountPath: {{ .Values.volumeConfiguration.taHostOsPath.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taHostOsPath.readOnly }}
+            - name: ta-mem-path
+              mountPath: {{ .Values.volumeConfiguration.taMemoryPath.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taMemoryPath.readOnly }}
+            - name: ta-acpi-path
+              mountPath: {{ .Values.volumeConfiguration.taAcpiPath.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taAcpiPath.readOnly }}
+            - name: efi
+              mountPath: {{ .Values.volumeConfiguration.efi.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.efi.readOnly }}
+            - name: uefi
+              mountPath: {{ .Values.volumeConfiguration.uefi.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.uefi.readOnly }}
+            - name: wla-config-volume
+              mountPath: {{ .Values.volumeConfiguration.wlaConfigVolume.mountPath }}
+            - name: ta-secrets
+              mountPath: {{ .Values.volumeConfiguration.taSecrets.mountPath }}
+              readOnly: {{ .Values.volumeConfiguration.taSecrets.readOnly }}
+      volumes:
+        - name: ta-logs-volume
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taLogsVolume.hostPath }}
+            type: {{ .Values.volumeConfiguration.taLogsVolume.type }}
+        - name: ta-config-volume
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taConfigVolume.hostPath }}
+            type: {{ .Values.volumeConfiguration.taConfigVolume.type }}
+        - name: tpmrm
+          hostPath:
+            path: {{ .Values.volumeConfiguration.tpmrm.hostPath }}
+        - name: efi
+          hostPath:
+            path: {{ .Values.volumeConfiguration.efi.hostPath }}
+        - name: ta-hostname-path
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taHostnamePath.hostPath }}
+            type: {{ .Values.volumeConfiguration.taHostnamePath.type }}
+        - name: ta-hosts-path
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taHostsPath.hostPath }}
+            type: {{ .Values.volumeConfiguration.taHostsPath.type }}
+        - name: ta-host-os-path
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taHostOsPath.hostPath }}
+            type: {{ .Values.volumeConfiguration.taHostOsPath.type }}
+        - name: ta-mem-path
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taMemoryPath.hostPath }}
+        - name: ta-acpi-path
+          hostPath:
+            path: {{ .Values.volumeConfiguration.taAcpiPath.hostPath }}
+        - name: uefi
+          hostPath:
+            path: {{ .Values.volumeConfiguration.uefi.hostPath }}
+        - name: wla-config-volume
+          hostPath:
+            path: {{ .Values.volumeConfiguration.wlaConfigVolume.hostPath }}
+            type: {{ .Values.volumeConfiguration.wlaConfigVolume.type }}
+        - name: ta-secrets
+          projected:
+            sources:
+              - secret:
+                  name: {{ .Values.daemonSetName }}-credentials
+              - secret:
+                  name: bearer-token
+...
+{{- end }}

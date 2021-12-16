@@ -25,12 +25,8 @@ server:
       command: ["/bin/chmod","-R","777", "/data"]
   extraVolumes:
     - name: certs
-      projected:
-        sources:
-          - secret:
-              name: root-ca
-          - secret:
-              name: "{{ _proxy_secret_name }}"
+      secret:
+        secretName: "{{ _proxy_secret_name }}"
     - name: proxy-config
       configMap:
         name: prometheus-proxy-config
@@ -44,10 +40,7 @@ server:
     scrape_timeout: 5s
   sidecarContainers:
     server-proxy:
-      image: nginx:alpine
-      securityContext:
-        runAsUser: 0
-        runAsNonRoot: false
+      image: "{{ _proxy_image }}:{{ _proxy_image_tag }}"
       volumeMounts:
       - name: proxy-config
         mountPath: /etc/nginx/nginx.conf
@@ -56,6 +49,8 @@ server:
         mountPath: /opt/prometheus/certs
       ports:
       - containerPort: 9099
+      securityContext:
+        runAsUser: {{ _proxy_user_id }}
   retention: "{{ telemetry_prometheus_retention }}"
 
 serverFiles:
@@ -71,7 +66,7 @@ serverFiles:
           - targets: ['statsd-exporter.telemetry.svc:9120']
         scheme: https
         tls_config:
-          ca_file: /opt/prometheus/certs/root.pem
+          ca_file: /opt/prometheus/certs/ca.crt
           cert_file: /opt/prometheus/certs/tls.crt
           key_file: /opt/prometheus/certs/tls.key
           server_name: statsd-exporter
@@ -97,7 +92,7 @@ serverFiles:
       - job_name: 'node-exporter'
         scheme: https
         tls_config:
-          ca_file: /opt/prometheus/certs/root.pem
+          ca_file: /opt/prometheus/certs/ca.crt
           cert_file: /opt/prometheus/certs/tls.crt
           key_file: /opt/prometheus/certs/tls.key
           server_name: node_exporter
@@ -122,7 +117,7 @@ serverFiles:
       - job_name: 'collectd'
         scheme: https
         tls_config:
-          ca_file: /opt/prometheus/certs/root.pem
+          ca_file: /opt/prometheus/certs/ca.crt
           cert_file: /opt/prometheus/certs/tls.crt
           key_file: /opt/prometheus/certs/tls.key
           server_name: collectd
@@ -147,7 +142,7 @@ serverFiles:
       - job_name: 'cadvisor'
         scheme: https
         tls_config:
-          ca_file: /opt/prometheus/certs/root.pem
+          ca_file: /opt/prometheus/certs/ca.crt
           cert_file: /opt/prometheus/certs/tls.crt
           key_file: /opt/prometheus/certs/tls.key
           server_name: cadvisor
@@ -172,7 +167,7 @@ serverFiles:
       - job_name: 'kubevirt'
         scheme: https
         tls_config:
-          ca_file: /opt/prometheus/certs/root.pem
+          ca_file: /opt/prometheus/certs/ca.crt
           cert_file: /opt/prometheus/certs/tls.crt
           key_file: /opt/prometheus/certs/tls.key
           server_name: kubevirt
@@ -301,7 +296,7 @@ serverFiles:
 nodeExporter:
   secretName: "{{ _node_exporter_name }}"
   image:
-    tag: v1.2.2
+    tag: v1.3.0
   extraArgs:
     web.config: /opt/config/web-config.yml
     collector.textfile.directory: /opt/vpumetrics
@@ -318,9 +313,6 @@ nodeExporter:
     - name: ne-certs
       secretName: "{{ _node_exporter_secret }}"
       mountPath: /opt/certs/node_exporter
-    - name: ca
-      secretName: root-ca
-      mountPath: /opt/certs/ca
   hostNetwork: true
   tolerations:
     - effect: NoSchedule
@@ -336,7 +328,6 @@ proxy:
   serverName: "{{ _proxy_server_name }}"
   secretName: "{{ _proxy_secret_name }}"
   certsDest:  /opt/prometheus/certs
-  image: nginx:alpine
   configMap: prometheus-proxy-config
   service:
     name: prometheus

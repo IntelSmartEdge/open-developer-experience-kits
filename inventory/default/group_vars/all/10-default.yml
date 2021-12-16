@@ -13,11 +13,14 @@
 ### Proxy settings
 proxy_env:
   # Proxy URLs to be used for HTTP, HTTPS and FTP
+  # Comment out proxy settings except no_proxy while deploying verification_controller on AWS
   http_proxy: ""
   https_proxy: ""
   ftp_proxy: ""
   # No proxy setting contains addresses and networks that should not be accessed using proxy (e.g. local network, Kubernetes CNI networks)
   no_proxy: ""
+  # all proxy need to use socks5 proxy to connect nats based servers(case with platform attestation components)
+  all_proxy: ""
 
 # Proxy for be used by GIT HTTP - required if GIT HTTP via proxy
 git_http_proxy: "{{ proxy_env['http_proxy'] | default('') }}"
@@ -39,8 +42,43 @@ ntp_servers: []
 # - Edge Controller - edit `inventory/default/group_vars/controller_group/10-default.yml`
 # To provide configuration for specific machine, place the settings in `inventory/default/host_vars/_inventory_host_name.yml`
 
-# Default grub parameters
-default_grub_params: "intel_iommu=on iommu=pt"
+# Disable sriov kernel flags (intel_iommu=on iommu=pt)
+iommu_enabled: true
+
+# Enable hugepages
+hugepages_enabled: false
+# Size of a single hugepage (2M or 1G)
+default_hugepage_size: 1G
+# Amount of hugepages
+hugepages_1G: 4
+hugepages_2M: 0
+
+# amount of memory "protected" from hugepages allocation in MB
+mem_reserved: 1024
+
+# Configure cpu_idle_driver
+cpu_idle_driver_setup_enabled: false
+cpu_idle_driver: poll
+
+# isolcpus_enabled controls the CPU isolation mechanisms configured via grub command line.
+isolcpus_enabled: false
+# isolcpus is parameter for isolcpus, rcu_nocbs, nohz_full kernel command line arguments.
+# For more information visit https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.htm
+# This variable is required.
+isolcpus: 2-4
+
+# os_cpu_affinity_cpus pins the kthread and irq processing to selected cores using kthread_cpus and irqaffinity
+# kernel command line arguments.
+# For more information visit https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.htm
+# Does nothing when empty.
+os_cpu_affinity_cpus: ""
+
+# Autogenerate isolated cores based on `cmk_exclusive_num_cores` when `cmk_enabled=true`.
+autogenerate_isolcpus: false
+
+# Enable additional grub parameters
+additional_grub_parameters_enabled: false
+additional_grub_parameters: ""
 
 ### Retry settings for network-based tasks
 # - number_of_retries - configures how many times failed task should be retried
@@ -63,17 +101,34 @@ kubernetes_cnis:
 # Calico's CIDR (will be included automatically to noproxy when calico is included in kubernetes_cnis)
 calico_cidr: "10.245.0.0/16"
 
+## SmartEdge namespaces
+system_namespace: "smartedge-system"
+application_namespace: "smartedge-apps"
+
+# SmartEdge installation directory
+project_dir: "/opt/smartedge"
+
+# SmartEdge users group
+project_group: "{{ ansible_user }}"
+
 ## SR-IOV Network Operator
 sriov_network_operator_enable: true
 
 ## SR-IOV Network Operator configuration
 sriov_network_operator_configure_enable: true
 
+# Nic names for the SR-IOV Network Operator
 cvl_sriov_nics:
-  c0p0: "eno12399"
-  c0p1: "eno12409"
-  c1p0: "ens5f0"
-  c1p1: "ens5f1"
+  RedHat:
+    c0p0: "em3"
+    c0p1: "em4"
+    c1p0: "p5p1"
+    c1p1: "p5p2"
+  Debian:
+    c0p0: "{{ 'enp137s0f0' if ansible_product_name == 'MOROCITY' else 'eno12399' }}"
+    c0p1: "{{ 'enp137s0f1' if ansible_product_name == 'MOROCITY' else 'eno12409' }}"
+    c1p0: "{{ 'enp137s0f2' if ansible_product_name == 'MOROCITY' else 'ens5f0' }}"
+    c1p1: "{{ 'enp137s0f3' if ansible_product_name == 'MOROCITY' else 'ens5f1' }}"
 
 # SriovNetworkNodePolicies list
 sriov_network_node_policies:
@@ -82,34 +137,34 @@ sriov_network_node_policies:
     num_vfs: 4
     priority: 99
     vendor: 8086
-    pf_names: ["{{ cvl_sriov_nics.c0p0 }}"]
+    pf_names: ["{{ cvl_sriov_nics[ansible_os_family].c0p0 }}"]
     device_type: netdevice
   - name: "sriov-vfio-pci-net-c0p1"
     resource_name: "sriov_vfiopci_net_c0p1"
     num_vfs: 4
     priority: 99
     vendor: 8086
-    pf_names: ["{{ cvl_sriov_nics.c0p1 }}"]
+    pf_names: ["{{ cvl_sriov_nics[ansible_os_family].c0p1 }}"]
     device_type: vfio-pci
   - name: "sriov-netdev-net-c1p0"
     resource_name: "sriov_netdev_net_c1p0"
     num_vfs: 4
     priority: 99
     vendor: 8086
-    pf_names: ["{{ cvl_sriov_nics.c1p0 }}"]
+    pf_names: ["{{ cvl_sriov_nics[ansible_os_family].c1p0 }}"]
     device_type: netdevice
   - name: "sriov-vfio-pci-net-c1p1"
     resource_name: "sriov_vfiopci_net_c1p1"
     num_vfs: 4
     priority: 99
     vendor: 8086
-    pf_names: ["{{ cvl_sriov_nics.c1p1 }}"]
+    pf_names: ["{{ cvl_sriov_nics[ansible_os_family].c1p1 }}"]
     device_type: vfio-pci
 
 # SriovNetworks list
 sriov_networks:
   - name: sriov-netdev-network-c0p0
-    network_namespace: smartedge-apps
+    network_namespace: "{{ application_namespace }}"
     ipam: |-
       {
       "type": "host-local",
@@ -125,7 +180,7 @@ sriov_networks:
     resource_name: sriov_netdev_net_c0p0
     link_state: enable
   - name:  sriov-netdev-network-c1p0
-    network_namespace: smartedge-apps
+    network_namespace: "{{ application_namespace }}"
     ipam: |-
       {
       "type": "host-local",
@@ -141,20 +196,39 @@ sriov_networks:
     resource_name: sriov_netdev_net_c1p0
     link_state: enable
   - name: sriov-vfio-network-c0p1
-    network_namespace: smartedge-apps
+    network_namespace: "{{ application_namespace }}"
     ipam: |-
       {}
     resource_name: sriov_vfiopci_net_c0p1
     link_state: enable
   - name: sriov-vfio-network-c1p1
-    network_namespace: smartedge-apps
+    network_namespace: "{{ application_namespace }}"
     ipam: |-
       {}
     resource_name: sriov_vfiopci_net_c1p1
     link_state: enable
- 
-## Enable OOT driver installation for E810
+
+## Enable OOT driver update for E810
 e810_driver_enable: True
+
+### Software Guard Extensions
+# SGX requires kernel 5.11+, SGX enabled in BIOS and access to PCC service
+sgx_enabled: "{{ false if ansible_product_name == 'MOROCITY' else true }}"
+
+## Install HWE Kernel for SGX
+install_hwe_kernel_enable: true
+
+# PCCS server IP address
+sgx_pccs_ip: ""
+
+# PCCS server port address
+sgx_pccs_port: "32666"
+
+# To accept insecure HTTPS cert, set this option to FALSE
+sgx_use_secure_cert: false
+
+# Provide a token to access PCCS
+pccs_user_token: ""
 
 ### Kubernetes Topology Manager configuration (for worker)
 # CPU settings
@@ -168,16 +242,6 @@ cpu:
 topology_manager:
   policy: "best-effort"
 
-# SmartEdge namespaces
-system_namespace: "smartedge-system"
-application_namespace: "smartedge-apps"
-
-# SmartEdge installation directory
-project_dir: "/opt/smartedge"
-
-# SmartEdge users group
-project_group: "{{ ansible_user }}"
-
 ## Network Edge Node Feature Discovery (NFD)
 ne_nfd_enable: true
 
@@ -189,6 +253,9 @@ ne_helm_charts_default_dir: "{{ project_dir }}/helm-charts"
 
 # Telemetry flavor - possible values: common (default), flexran, smartcity, corenetwork
 telemetry_flavor: common
+
+# Telemetry namespace
+telemetry_namespace: telemetry
 
 # Grafana
 telemetry_grafana_enable: true
@@ -236,3 +303,37 @@ _rc_local_path: "/etc/rc{{ '.local' if ansible_os_family == 'Debian' else '.d/rc
 
 # Harbor timeout
 harbor_timeout_min: 5
+
+###############
+## Platform attestation specific configurations
+
+# Install isecl attestation components (TA, ihub, isecl k8s controller and scheduler extension)
+platform_attestation_node: "{{ false if ansible_product_name == 'MOROCITY' else true }}"
+
+# CMS hash from Intel-secl controller. Use following command:
+# kubectl exec -n isecl --stdin "$(kubectl get pod -n isecl -l app=cms -o jsonpath="{.items[0].metadata.name}")" -- cms tlscertsha384
+isecl_cms_tls_hash: ""
+
+# Host on which NFS server is setup. If left empty, NFS server will be installed on kubernetes controller
+isecl_nfs_server: ""
+
+# List of nfs clients allowed to server. Only used when NFS server installed on kubernetes controller
+isecl_nfs_server_clients: []
+
+# Host IP of node hosting isecl controlplane(core) services. This could be hosted on cloud as well.
+isecl_control_plane_ip: ""
+
+###############
+## PCCS for SGX
+
+# ApiKey - The PCCS uses this API key to request collaterals from Intel's Provisioning Certificate Service
+pccs_api_key: ""
+
+# PCCS client
+pccs_user_password: ""
+
+# PCCS administrator
+pccs_admin_password: ""
+
+# NodePort to access PCCS from outside of cluster
+# pccs_access_port: 32666

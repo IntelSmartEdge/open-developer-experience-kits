@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+network_conf_for_retrieval_tool_dir: "/opt/intel/sgx-pck-id-retrieval-tool"
+

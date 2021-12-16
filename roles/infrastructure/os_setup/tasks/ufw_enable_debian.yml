@@ -5,13 +5,13 @@
 - name: open ssh port
   ufw:
     rule: allow
-    port: 22
+    port: '22'
     proto: tcp
-  become: true
+  become: yes
 
 - name: enable UFW
   ufw:
     state: enabled
-  become: true
+  become: yes
   notify:
     - reboot server

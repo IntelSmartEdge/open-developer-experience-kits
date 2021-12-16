@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: get saved kernel for next boot
+  shell: set -o pipefail && grep -m1 submenu "{{ grub2_config }}" | cut -f4 -d "'"
+  register: saved_kernel_entry
+  become: yes
+  changed_when: false
+
+- name: select menuentry from grub
+  shell:
+    cmd: set -o pipefail &&
+         grep menuentry "{{ grub2_config }}" |
+         cut -f4 -d "'" |
+         grep "{{ kernel_to_set }}"-advanced
+  register: menu_entry
+  become: yes
+  changed_when: false
+
+- name: set default kernel using menuentry
+  lineinfile:
+    path: "{{ grub_settings }}"
+    regexp: '^GRUB_DEFAULT='
+    line: 'GRUB_DEFAULT="{{ saved_kernel_entry.stdout }}>{{ menu_entry.stdout }}"'
+  register: grub_lineinfile
+  become: yes
+
+# noqa because include_role cannot be used in a handler
+- name: update grub  # noqa no-handler
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - grub_lineinfile.changed

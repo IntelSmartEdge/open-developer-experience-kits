@@ -21,6 +21,9 @@ tlsMinVersion: "VersionTLS12"
 tlsCipherSuites: ["TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256","TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256","TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384","TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"]
 {% if 'controller_group' not in group_names or single_node_deployment | d(false) %}
 featureGates:
+{% if pwek_enable is defined and pwek_enable %}
+  SCTPSupport: True
+{% endif %}
   TopologyManager: {{ False if topology_manager.policy == 'none' else True }}
 {% if topology_manager is defined and topology_manager.policy is defined and topology_manager.policy != 'none' %}
 topologyManagerPolicy: {{ topology_manager.policy }}

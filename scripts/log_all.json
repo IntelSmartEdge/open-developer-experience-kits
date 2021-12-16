@@ -6,8 +6,6 @@
         "git log -n100"
     ],
     "excludePaths": [
-        "offline_package_creator/opcdownloads$",
-        "unpack_offline_package/files/.*\\.tar.gz",
         "^biosfw"
     ]
 }

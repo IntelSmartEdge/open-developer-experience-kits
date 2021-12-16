@@ -8,11 +8,6 @@
   failed_when: false
   changed_when: false
 
-- name: set runc_url if offline mode
-  set_fact:
-    _docker_runc_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/runc.amd64"
-  when: offline_enable | default(false)
-
 # Upgrade runc to v1.0.0-rc93 which fixes an issue of freezing/frozen cgroups.
 - name: upgrade runc to a fixed version
   block:
@@ -22,11 +17,11 @@
         dest: /usr/bin/runc_bak
         mode: preserve
         remote_src: true
-      become: true
+      become: yes
     - name: download specific runc
       get_url:
         url: "{{ _docker_runc_url }}"
         dest: /usr/bin/runc
         checksum: "sha256:{{ _docker_runc_checksum }}"
-      become: true
+      become: yes
   when: runc_rc_ver.rc == 0 and runc_rc_ver.stdout|int < _docker_runc_min_rc

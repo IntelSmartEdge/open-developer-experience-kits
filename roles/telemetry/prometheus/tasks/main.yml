@@ -2,11 +2,8 @@
 # Copyright (c) 2020-2021 Intel Corporation
 
 ---
-- name: include certs variables
-  include_vars: ../../certs/defaults/main.yml
-
 - name: check if Prometheus release already exists
-  command: helm status prometheus -n telemetry
+  command: helm status prometheus -n {{ telemetry_namespace }}
   failed_when: false
   register: get_release_prometheus
   changed_when: false
@@ -20,16 +17,20 @@
       register: tmp_dir
 
     - name: create certificates for Prometheus server
-      include_tasks: ../../certs/tasks/create_certificates.yml
+      include_role:
+        name: kubernetes/certs
       vars:
         tls_secret_name: "{{ _proxy_secret_name }}"
-        proxy_name: "{{ _proxy_server_name }}"
+        desired_namespace: "{{ telemetry_namespace }}"
+        dns_names: ['prometheus']
 
     - name: create certificates for NodeExporter
-      include_tasks: ../../certs/tasks/create_certificates.yml
+      include_role:
+        name: kubernetes/certs
       vars:
         tls_secret_name: "{{ _node_exporter_secret }}"
-        proxy_name: "{{ _node_exporter_name }}"
+        desired_namespace: "{{ telemetry_namespace }}"
+        dns_names: ['node_exporter']
 
     - name: template values.yml to tmp directory
       template:
@@ -40,21 +41,15 @@
     - name: add default Helm repository
       command: helm repo add stable https://charts.helm.sh/stable
       changed_when: true
-      when: not (offline_enable | default(false))
 
     - name: create Prometheus chart template directory
       file:
         name: "{{ item }}"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       with_items:
         - "{{ _prometheus_chart_dir }}"
         - "{{ _prometheus_chart_dir }}/templates"
-
-    - name: reset _prometheus_chart_url when offline mode
-      set_fact:
-        _prometheus_chart_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/prometheus"
-      when: offline_enable | default(false)
 
     - name: download Prometheus chart
       get_url:
@@ -69,28 +64,9 @@
     - name: create destination directories
       file:
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
         path: "{{ _prometheus_chart_dir }}/{{ item | dirname }}"
       with_items: "{{ _prometheus_chart_templates }}"
-
-    - name: create destination directories only for offline
-      file:
-        state: directory
-        mode: 0777
-        path: "{{ _prometheus_chart_dir }}/{{ item | dirname }}"
-      with_items: "{{ _prometheus_dependency_charts }}"
-      when: offline_enable | default(false)
-
-    - name: download Prometheus dependency chart templates
-      get_url:
-        url: "{{ _prometheus_chart_url }}/{{ item }}"
-        dest: "{{ _prometheus_chart_dir }}/{{ item }}"
-      register: result
-      retries: "{{ number_of_retries }}"
-      until: result is succeeded
-      delay: "{{ retry_delay }}"
-      with_items: "{{ _prometheus_dependency_charts }}"
-      when: offline_enable | default(false)
 
     - name: download Prometheus chart templates
       get_url:
@@ -106,7 +82,7 @@
       file:
         path: "{{ _pv_dir }}/{{ item }}"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       with_items: "{{ _pv_names }}"
       become: yes
 
@@ -118,9 +94,8 @@
       with_items: "{{ _pv_names }}"
       changed_when: true
 
-
     - name: apply definitions of persistent volumes
-      command: kubectl apply -n telemetry -f "{{ tmp_dir.path }}/{{ item }}.yml"
+      command: kubectl apply -n {{ telemetry_namespace }} -f "{{ tmp_dir.path }}/{{ item }}.yml"
       with_items: "{{ _pv_names }}"
       changed_when: true
 
@@ -130,15 +105,24 @@
         dest: "{{ item.dest }}"
         mode: preserve
       loop:
-        - { src: node-exporter-configmap.yaml, dest: "{{ _prometheus_chart_dir }}/templates/node-exporter/cm.yaml" }
-        - { src: server-service-tls.yaml, dest: "{{ _prometheus_chart_dir }}/templates/server/service-tls.yaml" }
-        - { src: server-proxy-configmap.yaml, dest: "{{ _prometheus_chart_dir }}/templates/server/proxy-configmap.yaml" }
+        - {
+            src: node-exporter-configmap.yaml,
+            dest: "{{ _prometheus_chart_dir }}/templates/node-exporter/cm.yaml",
+          }
+        - {
+            src: server-service-tls.yaml,
+            dest: "{{ _prometheus_chart_dir }}/templates/server/service-tls.yaml",
+          }
+        - {
+            src: server-proxy-configmap.yaml,
+            dest: "{{ _prometheus_chart_dir }}/templates/server/proxy-configmap.yaml",
+          }
 
     - name: install patch utility
       package:
         name: patch
         state: present
-      become: true
+      become: yes
 
     - name: apply node-exporter-daemonset patch
       patch:
@@ -166,10 +150,9 @@
       command:
         cmd: helm dep update
         chdir: "{{ _prometheus_chart_dir }}"
-      when: not (offline_enable | default(false))
 
     - name: install Prometheus release
-      command: "helm install prometheus --namespace telemetry -f {{ tmp_dir.path }}/values.yml {{ _prometheus_chart_dir }}"
+      command: "helm install prometheus --namespace {{ telemetry_namespace }} -f {{ tmp_dir.path }}/values.yml {{ _prometheus_chart_dir }}"
       changed_when: true
 
     - name: remove temporary directory

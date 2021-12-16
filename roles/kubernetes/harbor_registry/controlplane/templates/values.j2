@@ -391,7 +391,7 @@ proxy:
 nginx:
   image:
     repository: goharbor/nginx-photon
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   # mount the service account token
@@ -416,7 +416,7 @@ nginx:
 portal:
   image:
     repository: goharbor/harbor-portal
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   # mount the service account token
@@ -440,7 +440,7 @@ portal:
 core:
   image:
     repository: goharbor/harbor-core
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   # mount the service account token
@@ -481,7 +481,7 @@ core:
 jobservice:
   image:
     repository: goharbor/harbor-jobservice
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   replicas: 1
   # set the service account to be used, default if left empty
   serviceAccountName: ""
@@ -521,7 +521,7 @@ registry:
   registry:
     image:
       repository: goharbor/registry-photon
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
     # resources:
     #  requests:
     #    memory: 256Mi
@@ -529,7 +529,7 @@ registry:
   controller:
     image:
       repository: goharbor/harbor-registryctl
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
 
     # resources:
     #  requests:
@@ -583,7 +583,7 @@ chartmuseum:
   absoluteUrl: false
   image:
     repository: goharbor/chartmuseum-photon
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   replicas: 1
   # resources:
   #  requests:
@@ -609,7 +609,7 @@ trivy:
     # repository the repository for Trivy adapter image
     repository: goharbor/trivy-adapter-photon
     # tag the tag for Trivy adapter image
-    tag: v2.3.2
+    tag: "{{ _harbor_app_version }}"
   # set the service account to be used, default if left empty
   serviceAccountName: ""
   # mount the service account token
@@ -675,14 +675,17 @@ notary:
     automountServiceAccountToken: false
     image:
       repository: goharbor/notary-server-photon
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
     replicas: 1
     # resources:
     #  requests:
     #    memory: 256Mi
     #    cpu: 100m
     nodeSelector: {}
-    tolerations: []
+    tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+      operator: Exists
     affinity: {}
     ## Additional deployment annotations
     podAnnotations: {}
@@ -695,7 +698,7 @@ notary:
     automountServiceAccountToken: false
     image:
       repository: goharbor/notary-signer-photon
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
     replicas: 1
     # resources:
     #  requests:
@@ -730,7 +733,7 @@ database:
     automountServiceAccountToken: false
     image:
       repository: goharbor/harbor-db
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
     # The initial superuser password for internal database
     password: "changeit"
     # The size limit for Shared memory, pgSQL use it for shared_buffer
@@ -744,8 +747,10 @@ database:
       limits:
         memory: 2Gi
         cpu: 4
-        hugepages-2Mi: {% if hugepages_total.stdout | int > 0 and hugepage_size.stdout == '2048' %}300Mi{% else %}0{% endif %}  
-        hugepages-1Gi: {% if hugepages_total.stdout | int > 0 and hugepage_size.stdout == '1048576' %}1Gi{% else %}0{% endif %}  
+        hugepages-2Mi: {% if hugepages_enabled and hugepages_2M > 0 %}300Mi{% else %}0{% endif %}
+
+        hugepages-1Gi: {% if hugepages_enabled and hugepages_1G > 0 %}1Gi{% else %}0{% endif %}
+
     nodeSelector: {}
     tolerations:
     - effect: NoSchedule
@@ -802,7 +807,7 @@ redis:
     automountServiceAccountToken: false
     image:
       repository: goharbor/redis-photon
-      tag: v2.3.2
+      tag: "{{ _harbor_app_version }}"
     # resources:
     #  requests:
     #    memory: 256Mi

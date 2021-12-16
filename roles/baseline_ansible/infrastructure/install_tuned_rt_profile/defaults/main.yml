@@ -5,6 +5,9 @@
 # tuned_version: "*"
 tuned_version: "2.11.0-10.el7.noarch"
 
+tuned_centos79_packages:
+  - http://linuxsoft.cern.ch/scientific/7x/x86_64/os/Packages/tuned-2.11.0-9.el7.noarch.rpm
+  - http://linuxsoft.cern.ch/scientific/7x/x86_64/os/Packages/tuned-profiles-realtime-2.11.0-9.el7.noarch.rpm
 
 tuned_profile_common: realtime
 tuned_profile_centos7: realtime-virtual-host

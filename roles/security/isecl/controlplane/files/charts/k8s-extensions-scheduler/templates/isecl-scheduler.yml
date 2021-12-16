@@ -1,0 +1,84 @@
+# Copyright (C) 2021  Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ .Values.appName }}
+  name: {{ .Values.appName }}-deployment
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+      name: {{ .Values.appName }}
+    spec:
+      securityContext:
+        fsGroup: {{ .Values.podSecurityContext.fsGroup }}
+      initContainers:
+        - image: busybox:1.32
+          imagePullPolicy: IfNotPresent
+          name: chmod-pg-data
+          command:
+            - /bin/chown
+            - -R
+            - "1001"
+            - {{ .Values.volume.path }}
+          volumeMounts:
+            - name: scheduler-log
+              mountPath: {{ .Values.volume.path }}
+      tolerations:
+        - key: {{ .Values.tolerations.key }}
+          operator: Exists
+          effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                 -
+                  key: {{ .Values.affinity.key }}
+                  operator: Exists
+      containers:
+        - name: isecl-scheduler
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            runAsGroup: {{ .Values.securityContext.runAsGroup }}
+          env:
+            - name: LOG_LEVEL
+              value: "{{ .Values.env.LOG_LEVEL }}"
+            - name: TAG_PREFIX
+              value: "{{ .Values.env.TAG_PREFIX }}"
+            - name: PORT
+              value: "{{ .Values.env.PORT }}"
+            - name: SGX_IHUB_PUBLIC_KEY_PATH
+              value: ""
+            - name: HVS_IHUB_PUBLIC_KEY_PATH
+              value: "{{ .Values.k8sExtensionsSchedulerCerts }}/hvs_ihub_public_key.pem"
+            - name: TLS_CERT_PATH
+              value: "{{ .Values.k8sExtensionsSchedulerCerts }}/server.crt"
+            - name: TLS_KEY_PATH
+              value: "{{ .Values.k8sExtensionsSchedulerCerts }}/server.key"
+          volumeMounts:
+          - mountPath: {{ .Values.volume.path }}
+            name: scheduler-log
+          - name: scheduler-certs
+            mountPath: {{ .Values.k8sExtensionsSchedulerCerts }}
+            readOnly: true
+      volumes:
+        - hostPath:
+            path: {{ .Values.volume.path }}
+            type: DirectoryOrCreate
+          name: scheduler-log
+        - name: scheduler-certs
+          secret:
+            secretName: scheduler-certs
+            defaultMode: 0640

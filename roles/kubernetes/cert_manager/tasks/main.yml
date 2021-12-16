@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Check if cert-manager is installed
+  command: helm status cert-manager -n {{ _cert_manager_namespace }}
+  changed_when: false
+  register: helm_query
+  failed_when: false
+
+- name: Install cert-manager
+  include_tasks: install_cert_manager.yml
+  when: "helm_query.rc != 0"
+
+- name: Check if cmctl is installed
+  command: which cmctl
+  register: cmctl_query
+  failed_when: false
+  changed_when: false
+
+- name: Install cmctl
+  include_tasks: install_cmctl.yml
+  when: cmctl_query.rc != 0

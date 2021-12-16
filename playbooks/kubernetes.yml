@@ -2,36 +2,25 @@
 # Copyright (c) 2019-2021 Intel Corporation
 
 ---
-
 # Playbook for Network Edge deployment
 - hosts: controller_group
   any_errors_fatal: true
 
-  pre_tasks:
-  - name: update controller repo path
-    set_fact:
-      _git_repo_dest: "{{ project_dir }}/edgeservices/edgecontroller"
-
   roles:
-
     - role: kubernetes/install
     - role: kubernetes/customize_kubelet
     - role: kubernetes/controlplane
     - role: kubernetes/helm
-    - role: kubernetes/harbor_registry/controlplane
     - role: kubernetes/cni
-    - role: kubernetes/default_netpol
+    - role: kubernetes/cert_manager
+    - role: kubernetes/harbor_registry/controlplane
+      when: "harbor_registry_enable | default(True)"
     - role: kubernetes/create_namespaces
+    - role: kubernetes/default_netpol
+    - role: kubernetes/sgx_device_plugin
+      when: sgx_enabled | default(False)
     - role: kubernetes/nfd
       when: "ne_nfd_enable | default(True)"
-
-    - role: telemetry/certs
-      when: >
-        telemetry_prometheus_enable | default(True) or
-        telemetry_statsd_exporter_enable | default(True) or
-        telemetry_collectd_enable | default(True) or
-        telemetry_cadvisor_enable | default(True) or
-        telemetry_grafana_enable | default(True)
 
     - role: telemetry/prometheus
       when: "telemetry_prometheus_enable | default(True)"
@@ -51,6 +40,7 @@
     - role: kubernetes/customize_kubelet
     - role: kubernetes/node
     - role: kubernetes/harbor_registry/node
+      when: "harbor_registry_enable | default(True)"
     - role: kubernetes/cni
 
     - role: baseline_ansible/kubernetes/operator/sriov_network_operator/prepare_node

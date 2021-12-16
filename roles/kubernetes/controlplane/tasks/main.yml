@@ -14,34 +14,34 @@
       template:
         src: config.yaml.j2
         dest: "{{ _cluster_config_file }}"
-        mode: 0600
-      become: true
+        mode: a=,u=rw
+      become: yes
     - name: assemble kubelet and kubeadm to general config
       assemble:
         src: "{{ _kubernetes_config_dir }}"
         dest: /tmp/config.yaml
-        mode: 0600
+        mode: a=,u=rw
         delimiter: "---"
-      become: true
+      become: yes
     - name: initialize cluster
       command: kubeadm init --config=/tmp/config.yaml
-      become: true
+      become: yes
     - name: copy cluster admin config(user)
       block:
         - name: create .kube dir
           file:
             path: .kube
             state: directory
-            mode: 0700
+            mode: a=,u=rwx
         - name: copy kubernetes admin.conf to .kube/config
           copy:
             src: /etc/kubernetes/admin.conf
             dest: .kube/config
-            mode: 0600
+            mode: a=,u=rw
             remote_src: true
-            owner: "{{ ansible_real_user_id }}"
-            group: "{{ ansible_real_group_id }}"
-          become: true
+            owner: "{{ ansible_real_user_id | string }}"
+            group: "{{ ansible_real_group_id | string }}"
+          become: yes
         - name: remove the taint to be able to schedule Pods on the control-plane node
           command: kubectl taint nodes --all node-role.kubernetes.io/master-
           when: single_node_deployment | default(false)
@@ -51,12 +51,12 @@
           file:
             path: /root/.kube
             state: directory
-            mode: 0700
+            mode: a=,u=rwx
         - name: copy kubernetes admin.conf to /root/.kube/config
           copy:
             src: /etc/kubernetes/admin.conf
             dest: /root/.kube/config
-            mode: 0600
+            mode: a=,u=rw
             remote_src: true
-      become: true
+      become: yes
   when: cluster_info.rc == 1

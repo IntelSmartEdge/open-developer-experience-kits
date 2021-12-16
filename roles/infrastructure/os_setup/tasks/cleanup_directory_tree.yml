@@ -9,4 +9,4 @@
   with_items:
   - "{{ project_dir }}"
   - "{{ _persistent_volumes_dest }}"
-  become: true
+  become: yes

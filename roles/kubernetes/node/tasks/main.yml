@@ -22,7 +22,7 @@
       file:
         path: /etc/kubernetes
         state: absent
-      become: true
+      become: yes
     - name: obtain the join command
       command: kubeadm token create --print-join-command --ttl=10m --description="token for {{ ansible_nodename }} ({{ ansible_host }})"
       register: join_command
@@ -33,14 +33,14 @@
         awk -F" " ' { print $5 } '
       register: token
       ignore_errors: false
-      become: true
+      become: yes
     - name: get discovery-token-ca-cert-hash
       shell: >
         echo '{{ join_command.stdout }}' |
         awk -F" " ' { print $7 } '
       register: discovery_token_ca_cert_hash
       ignore_errors: false
-      become: true
+      become: yes
     - name: create JoinConfiguration and update Kubelet config
       blockinfile:
         path: "{{ _kubernetes_config_file }}"
@@ -60,10 +60,10 @@
             criSocket: /var/run/dockershim.sock
             name: {{ k8s_worker_node_name }}
             taints: null
-      become: true
+      become: yes
     - name: join the cluster
       command: "kubeadm join --config={{ _kubernetes_config_file }} --v=2"
-      become: true
+      become: yes
   when: get_node.rc == 1
 
 - name: label node as a worker

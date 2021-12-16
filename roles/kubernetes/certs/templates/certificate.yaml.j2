@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ tls_secret_name }}
+  namespace: {{ desired_namespace }}
+spec:
+  secretName: {{ tls_secret_name }}
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  subject:
+    organizations:
+      - smartedge
+  isCA: false
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  usages:
+    - server auth
+    - client auth
+  ipAddresses:
+  {% for ip_adress in ips %}
+    - {{ ip_adress }}
+  {% endfor %}
+
+  dnsNames:
+  {% for dns_name in dns_names|default([])%}
+   - {{ dns_name }}
+  {% endfor %}
+
+  issuerRef:
+    name: ca-issuer
+    kind: ClusterIssuer

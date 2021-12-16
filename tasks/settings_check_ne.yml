@@ -28,9 +28,17 @@
     when: not biosfw_syscfg_package_stat.stat.exists
   when:
   - ne_biosfw_enable | default(False)
-  - not offline_enable | default(False)
   vars:
     role_path: "{{ playbook_dir }}/roles/kubernetes/biosfw/node"
+
+- name: check VT-d open in bios
+  block:
+  - name: print VT-d debug msg
+    debug:
+      msg: "Expected VT-d - ENABLED, if failed please check bios"
+  - name: check VT-d status
+    command: ls /sys/kernel/iommu_groups/0/devices/0000:00:00.0
+  when: vtd_bios_check | default(False)
 
 - name: check Hyperthreading state
   block:
@@ -50,3 +58,12 @@
         Current Hyperthreading state - DISABLED.
     when: expected_hyperthreading_state == "enabled" and ht.stdout != "2"
   when: check_hyperthreading | bool
+
+- name: validate Intel-secl 
+  include_tasks: "../roles/security/isecl/common/tasks/precheck.yml"
+
+- name: validate PCCS
+  include_tasks: "../roles/security/pccs/tasks/precheck.yml"
+
+- name: validate SGX
+  include_tasks: "../roles/infrastructure/provision_sgx_enabled_platform/tasks/param_precheck.yml"

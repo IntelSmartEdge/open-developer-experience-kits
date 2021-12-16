@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+nfs_server_open_ports:
+  - 2049/udp # nfsd
+  - 2049/tcp # nfsd
+  - 111/udp # portmap
+  - 111/tcp # portmap
+
+install_dependencies:
+  Debian:
+    - nfs-kernel-server
+  RedHat:
+    - nfs-utils

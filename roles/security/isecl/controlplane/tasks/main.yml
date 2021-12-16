@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: Load OS specyfic vars
+  include_vars: ../../common/defaults/main.yml
+
+- name: Set K8S control plane vars
+  set_fact:
+    isecl_k8s_control_plane_ip: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+    isecl_k8s_control_plane_hostname: "{{ hostvars[inventory_hostname].ansible_hostname }}"
+
+- name: Get tokens
+  include_tasks: get_tokens.yml
+
+- name: Handle TPM endorsment certificate
+  include_tasks: handle_endorsment_cert.yml
+
+- name: Setup helm charts dir
+  include_tasks: ../../common/tasks/setup_helm_chart_dir.yml
+
+- name: Setup NFS
+  include_tasks: ../../common/tasks/setup_nfs.yml
+  vars:
+    helm_values_files:
+      - "{{ isecl_helm_charts_dir }}/ihub/values.yaml"
+
+- name: Deploy TA
+  include_tasks: trust-agent.yml
+
+- name: Deploy k8s-extensions-controller
+  include_tasks: k8s-extensions-controller.yml
+
+- name: Deploy ihub
+  include_tasks: ihub.yml
+
+- name: Deploy k8s-extensions-scheduler
+  include_tasks: k8s-extensions-scheduler.yml

@@ -8,7 +8,7 @@
     regexp: "^plugins=.*"
     state: absent
   when: os_remove_yum_plugins
-  become: true
+  become: yes
 
 - name: Handle excludes (rpm packages) from /etc/yum.conf
   block:
@@ -22,15 +22,22 @@
         dest: /etc/yum.conf
         line: "{{ os_yum_exclude_rpm_packages }}"
         insertafter: EOF
-  become: true
+  become: yes
   when:
     - os_yum_exclude_rpm_packages is defined
     - os_yum_exclude_rpm_packages|length > 0
 
 - name: enable repositories
   include_tasks: redhat_enable_repositories.yml
-  when: not offline_enable | default(false)
 
 - name: install kernel devel and sources
   include_tasks: redhat_install_kernel_headers_and_devel.yml
-  when: not offline_enable | default(false)
+
+- name: update ca-certificates for Centos 7
+  yum:
+    name: ca-certificates
+    state: latest # noqa package-latest
+  become: yes
+  when:
+    - ansible_distribution == 'CentOS'
+    - ansible_distribution_version < '8'

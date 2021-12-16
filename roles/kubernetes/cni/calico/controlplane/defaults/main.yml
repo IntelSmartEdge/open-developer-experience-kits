@@ -2,7 +2,7 @@
 # Copyright (c) 2020 Intel Corporation
 
 ---
-_calico_version: "v3.19"
+_calico_version: "v3.20"
 _calico_manifest: "{{ 'calico-bpf.yaml' if ( calico_ebpf_enabled | default(false) ) else 'calico.yaml' }}"
 _calico_url: https://docs.projectcalico.org/{{ _calico_version }}/manifests/{{ _calico_manifest }}
 calico_ipam_type: "{{ 'calico-ipam' if ( calico_ebpf_enabled | default(false) ) else 'host-local' }}"

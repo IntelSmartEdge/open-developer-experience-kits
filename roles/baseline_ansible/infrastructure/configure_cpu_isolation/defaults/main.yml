@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# isolcpus_enabled controls the CPU isolation mechanisms configured via grub command line.
+isolcpus_enabled: false
+# isolcpus is parameter for isolcpus, rcu_nocbs, nohz_full kernel command line arguments.
+# For more information visit https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.htm
+# This variable is required.
+isolcpus: 2-4
+
+# os_cpu_affinity_cpus pins the kthread and irq processing to selected cores using kthread_cpus and irqaffinity
+# kernel command line arguments.
+# For more information visit https://www.kernel.org/doc/html/latest/admin-guide/kernel-parameters.htm
+# Does nothing when empty.
+os_cpu_affinity_cpus: ""
+
+# Autogenerate isolated cores based on `cmk_exclusive_num_cores` when `cmk_enabled=true`.
+autogenerate_isolcpus: false

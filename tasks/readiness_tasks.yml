@@ -15,16 +15,6 @@
   tags: always
 
 - block:
-  - name: kernel
-    include_tasks: ../roles/infrastructure/custom_kernel/tasks/readiness.yml
-  tags: kernel
-  when: not (skip_kernel | default(True))
-- block:
-  - name: grub
-    include_tasks: ../roles/infrastructure/grub/tasks/readiness.yml
-  tags: grub
-
-- block:
   - name: kubernetes/install
     include_tasks: ../roles/kubernetes/install/tasks/readiness.yml
   - name: kubernetes/controlplane
@@ -39,9 +29,6 @@
   - name: harbor_registry/controlplane
     include_tasks: ../roles/kubernetes/harbor_registry/controlplane/tasks/readiness.yml
     when: "'controller_group' in group_names"
-  - name: harbor_registry/node
-    include_tasks: ../roles/kubernetes/harbor_registry/node/tasks/readiness.yml
-    # for both controlplane & node
   tags: harbor
 
 - block:
@@ -78,20 +65,16 @@
     include_tasks: ../roles/telemetry/cadvisor/tasks/readiness.yml
     when:
       - "'controller_group' in group_names"
+      - telemetry_cadvisor_enable | default(True)
   - name: collectd controlplane
     include_tasks: ../roles/telemetry/collectd/controlplane/tasks/readiness.yml
     when:
       - "'controller_group' in group_names"
+      - telemetry_collectd_enable | default(True)
   - name: prometheus
     include_tasks: ../roles/telemetry/prometheus/tasks/readiness.yml
     when:
       - "'controller_group' in group_names"
+      - telemetry_prometheus_enable | default(True)
+      
   tags: telemetry
-
-- block:
-  - name: istio
-    include_tasks: ../roles/kubernetes/istio/tasks/readiness.yml
-  tags: istio
-  when:
-    - "'controller_group' in group_names"
-    - ne_istio_enable | default(False)

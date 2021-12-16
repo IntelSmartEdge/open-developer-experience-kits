@@ -2,7 +2,6 @@
 # Copyright (c) 2020 Intel Corporation
 
 ---
-
 # Config map for version 1.0.0-rc.0.
 # In case of update please check https://github.com/prometheus/node_exporter/tree/master/https
 # for new config keys.
@@ -19,4 +18,4 @@ data:
       cert_file: "/opt/certs/node_exporter/tls.crt"
       key_file: "/opt/certs/node_exporter/tls.key"
       client_auth_type: "RequireAndVerifyClientCert"
-      client_ca_file: "/opt/certs/ca/root.pem"
+      client_ca_file: "/opt/certs/node_exporter/ca.crt"

@@ -2,9 +2,26 @@
 # Copyright (c) 2021 Intel Corporation
 
 ---
-- name: install dependencies
+- name: install kernel RT dependencies
   include_role:
     name: infrastructure/install_dependencies
+
+- name: install custom tuned packages on 7.x for kernel RT
+  block:
+    - name: include tuned variables if not defined
+      include_vars: ../../install_tuned_rt_profile/defaults/main.yml
+      when:
+        - tuned_centos79_packages is not defined
+    - name: install custom tuned packages
+      package:
+        name: "{{ tuned_centos79_packages | join(',') }}"
+        state: present
+        allow_downgrade: yes
+  when:
+    - ansible_distribution in ["RedHat", "CentOS"]
+    - ansible_distribution_version < '8'
+    - install_custom_tuned | default(false)
+  become: yes
 
 - name: Setup for CentOS
   block:
@@ -13,7 +30,7 @@
         src: CentOS7-RT.repo
         dest: /etc/yum.repos.d/CentOS-RT.repo
         mode: preserve
-      become: true
+      become: yes
       when:
         - not setup_user_defined_kernel_rt_repo
         - ansible_distribution_version < '8'
@@ -23,7 +40,7 @@
         src: CentOS8-RT.repo
         dest: /etc/yum.repos.d/CentOS-RT.repo
         mode: preserve
-      become: true
+      become: yes
       when:
         - not setup_user_defined_kernel_rt_repo
         - not ansible_distribution_version < '8'
@@ -35,7 +52,7 @@
 
 - name: add RHEL RT repo
   command: subscription-manager repos --enable rhel-8-for-x86_64-rt-rpms
-  become: true
+  become: yes
   when: ansible_distribution == 'RedHat'
 
 - name: install RT kernel
@@ -47,7 +64,7 @@
     state: present
     allow_downgrade: true
     disable_excludes: main
-  become: true
+  become: yes
   notify:
     - reboot server
   when:
@@ -62,7 +79,7 @@
     state: present
     allow_downgrade: true
     disable_excludes: main
-  become: true
+  become: yes
   notify:
     - reboot server
   when:
@@ -104,7 +121,7 @@
 - name: get saved kernel for next boot
   shell: set -o pipefail && grub2-editenv list | grep saved_entry | cut -f2 -d'='
   register: saved_kernel_entry
-  become: true
+  become: yes
   changed_when: false
 
 - name: set grub2 config name
@@ -119,12 +136,12 @@
          cut -d "'" -f2 |
          grep {{ expected_kernel_version }}
   register: menu_entry
-  become: true
+  become: yes
   changed_when: false
 
 - name: set default kernel when menuentry is not available
   command: grubby --set-default /boot/vmlinuz-{{ expected_kernel_version }}
-  become: true
+  become: yes
   changed_when: true
   when:
     - menu_entry.stdout | length == 0
@@ -133,12 +150,12 @@
   command: grub2-set-default "{{ menu_entry.stdout }}"
   notify:
     - reboot server
-  become: true
+  become: yes
   when:
     - menu_entry.stdout | length > 0
     - saved_kernel_entry.stdout not in menu_entry.stdout
 
 - name: verify grub2 default entry
   command: grub2-editenv list
-  become: true
+  become: yes
   changed_when: false

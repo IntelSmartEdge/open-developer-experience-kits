@@ -11,6 +11,8 @@ metadata:
 data:
   nginx.conf: |-
     worker_processes  1;
+    pid /tmp/nginx.pid;
+
     events {
         worker_connections  1024;
     }
@@ -24,9 +26,9 @@ data:
         server {
             listen                 {{ .Values.proxy.apiPort }} ssl;
             server_name            {{ .Values.proxy.serverName }};
-            ssl_certificate        /opt/grafana/certs/tls.crt;
-            ssl_certificate_key    /opt/grafana/certs/tls.key;
-            ssl_client_certificate /opt/grafana/certs/root.pem;
+            ssl_certificate        {{ .Values.proxy.certsDest }}/tls.crt;
+            ssl_certificate_key    {{ .Values.proxy.certsDest }}/tls.key;
+            ssl_client_certificate {{ .Values.proxy.certsDest }}/ca.crt;
             ssl_verify_client      off;
             ssl_protocols          {{ .Values.proxy.protocols }};
             ssl_ciphers            {{ join ":" .Values.proxy.ciphers }};

@@ -99,7 +99,10 @@ resources: {}
 
 nodeSelector: {}
 
-tolerations: []
+tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
 
 affinity: {}
 
@@ -108,9 +111,10 @@ proxy:
   metricsStatsdPort: 9120
   serverName: {{ _proxy_server_name }}
   secretName: {{ _proxy_secret_name }}
-  certsDest: /root/certs/statsd
+  certsDest: /opt/statsd/certs
   internalStatsdPort: 9102
-  image: nginx:alpine
+  image: nginxinc/nginx-unprivileged
+  tag: 1.20-alpine
   name: statsd-exporter-proxy
   pathToNginxCfg: /etc/nginx/nginx.conf
   protocols: TLSv1.2 TLSv1.3

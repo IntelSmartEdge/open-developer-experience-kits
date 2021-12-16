@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: validate isolcpus settings
+  assert:
+    that: isolcpus | length > 0
+    fail_msg: "CPU isolation enabled, but list of CPUs to isolate is not defined, make sure that 'isolcpus' variable is set"
+
+- name: load present CPUs range
+  command: cat /sys/devices/system/cpu/present
+  changed_when: false
+  register: cpus_present_file
+  become: yes
+
+- name: get range of all available CPUs
+  set_fact:
+    cpus_present: "{{ cpus_present_file.stdout }}"
+
+- name: validate provided isolcpus value
+  action: validate_isolcpus
+
+- name: set isolcpus flag with working thread isolation
+  set_fact:
+    isolcpus_flags: "isolcpus={{ isolcpus }} rcu_nocbs={{ isolcpus }} nohz=on nohz_full={{ isolcpus }} nr_cpus={{ ansible_processor_vcpus }}"
+
+- name: set isolcpus flag with os threads isolation
+  set_fact:
+    isolcpus_flags: "{{ isolcpus_flags }} kthread_cpus={{ os_cpu_affinity_cpus }} irqaffinity={{ os_cpu_affinity_cpus }}"
+  when:
+    - os_cpu_affinity_cpus | length > 0
+
+
+- name: prepare CPU isolation grub commandline string
+  set_fact:
+    cpu_isolation_cmdline: 'GRUB_CMDLINE_LINUX="${GRUB_CMDLINE_LINUX} {{ isolcpus_flags }}" {{ isolcpus_marker }}'
+
+- name: set CPU isolation flags in /etc/default/grub
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX="\${GRUB_CMDLINE_LINUX}(.*?)" {{ isolcpus_marker }}$'
+    line: '{{ cpu_isolation_cmdline }}'
+    state: present
+    mode: a=r,u+w,g+w
+  register: grub
+  become: yes

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.aasDB.name }}-config
+  namespace: {{ .Values.aasDB.nameSpace }}
+data:
+  pg_hba.conf:
+    {{- toYaml .Values.postgresConf.hbaConf | nindent 4 }}
+  postgresql.conf:
+    {{- toYaml .Values.postgresConf.sqlConf | nindent 4 }}

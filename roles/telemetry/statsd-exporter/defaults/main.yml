@@ -4,7 +4,7 @@
 ---
 
 _statsd_exporter_chart_dir: "{{ ne_helm_charts_default_dir }}/prometheus-statsd-exporter"
-_statsd_exporter_chart_commit: "prometheus-statsd-exporter-0.3.1"
+_statsd_exporter_chart_commit: "prometheus-statsd-exporter-0.4.1"
 _statsd_exporter_chart_url:
   "https://raw.githubusercontent.com/prometheus-community/helm-charts/\
   {{ _statsd_exporter_chart_commit }}/charts/prometheus-statsd-exporter/"

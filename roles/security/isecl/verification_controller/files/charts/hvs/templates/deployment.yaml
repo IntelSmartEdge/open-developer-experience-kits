@@ -1,0 +1,66 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.basename }}-deployment
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.basename}}
+    env: demo
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: {{ .Values.basename}}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.basename}}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.basename }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8443
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.basename }}-config
+          volumeMounts:
+            - name: hvs-config-volume
+              mountPath: {{ .Values.volumeConfig.hvsConfigPath }}
+            - name: hvs-logs-volume
+              mountPath: {{ .Values.volumeConfig.hvsLogsPath }}
+            - name: hvs-db-certs
+              mountPath: {{ .Values.volumeConfig.hvsDbCertsPath }}
+            - mountPath: {{ .Values.volumeConfig.hvsSecretsPath }}
+              name: hvs-secrets
+              readOnly: true
+      volumes:
+        - name: hvs-logs-volume
+          persistentVolumeClaim:
+            claimName: hvs-logs-pvc
+        - name: hvs-config-volume
+          persistentVolumeClaim:
+            claimName: hvs-config-pvc
+        - name: hvs-db-certs
+          secret:
+            secretName: hvs-db-certs
+            defaultMode: 0640
+        - name: hvs-secrets
+          projected:
+            sources:
+              - secret:
+                  name: hvs-credentials
+              - secret:
+                  name: bearer-token

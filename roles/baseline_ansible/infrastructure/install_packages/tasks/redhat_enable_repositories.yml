@@ -10,7 +10,7 @@
       set_fact: temp_codeready_enabled="{{ codeready_linux_builder_repository_enabled or temp_epel_enabled }}"
 
 - name: Install CodeReady Linux Builder repository
-  become: true
+  become: yes
   rhsm_repository:
     name: codeready-builder-for-rhel-8-x86_64-rpms
   when:
@@ -27,9 +27,8 @@
   package:
     name: https://repo.ius.io/ius-release-el7.rpm
     state: present
-  become: true
+  become: yes
   when:
-    - not offline_enable | default(false)
     - ansible_distribution_version < '8'
     - ius_repository_enabled
 
@@ -56,6 +55,12 @@
 
 - name: CentOS handling
   block:
+    - name: install wget
+      yum:
+        name: wget
+        state: present
+      become: yes
+    
     - name: set full distribution version CentOS
       set_fact:
         full_dist_version: "{{ release.stdout | regex_replace('.*(\\d+.\\d+.\\d\\d\\d\\d).*', '\\1') }}"

@@ -14,10 +14,10 @@
       - kernel-*headers
     disable_excludes: main
     state: absent
-  become: true
+  become: yes
 
 - name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
-  become: true
+  become: yes
   package:
     name: "{{ item }}"
     state: present
@@ -37,7 +37,7 @@
     - ansible_distribution_version < '8'
 
 - name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
-  become: true
+  become: yes
   package:
     name: "{{ item }}"
     state: present
@@ -56,7 +56,7 @@
     - full_dist_version not in latest_centos_release
 
 - name: pull matching kernel headers and devel on CentOS {{ full_dist_version }}
-  become: true
+  become: yes
   package:
     name: "{{ item }}"
     state: present
@@ -75,7 +75,7 @@
     - full_dist_version in latest_centos_release
 
 - name: pull matching kernel headers and devel on RHEL {{ full_dist_version }}
-  become: true
+  become: yes
   package:
     name: "{{ item }}"
     state: present

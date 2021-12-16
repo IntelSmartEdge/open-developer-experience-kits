@@ -28,8 +28,9 @@ proxy:
   internalCadvisorPort: 9106
   serverName: "{{ _proxy_server_name }}"
   name: cadvisor-proxy
-  certsDest: /root/certs/cadvisor/
-  image: nginx:alpine
+  certsDest: /opt/cadvisor/certs
+  image: nginxinc/nginx-unprivileged
+  tag: 1.20-alpine
   pathToNginxCfg: /etc/nginx/nginx.conf
   configMap: cadvisor-proxy-config
   protocols: TLSv1.2 TLSv1.3

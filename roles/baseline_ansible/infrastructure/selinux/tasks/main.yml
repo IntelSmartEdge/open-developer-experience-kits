@@ -8,18 +8,18 @@
       command: setenforce 0
       failed_when: false
       changed_when: false
-      become: true
+      become: yes
 
     - name: set SELinux to permissive mode (pernament)
       selinux:
         policy: targeted
         state: permissive
-      become: true
+      become: yes
       when: ansible_distribution_version < '8'
 
     - name: disable SELinux (pernament)
       selinux:
         state: disabled
-      become: true
+      become: yes
       when: ansible_distribution_version >= '8'
   when: ansible_os_family == "RedHat"

@@ -7,7 +7,7 @@ _pv_names:
   - prometheus-volume
 
 _prometheus_chart_dir: "{{ ne_helm_charts_default_dir }}/prometheus"
-_prometheus_chart_commit: "prometheus-13.3.3"
+_prometheus_chart_commit: "prometheus-14.9.2"
 _prometheus_chart_url: "https://raw.githubusercontent.com/prometheus-community/helm-charts/{{ _prometheus_chart_commit }}/charts/prometheus/"
 
 _prometheus_chart:
@@ -89,3 +89,7 @@ _prometheus_dependency_charts:
   - "charts/kube-state-metrics/templates/service.yaml"
   - "charts/kube-state-metrics/templates/stsdiscovery-rolebinding.yaml"
   - "charts/kube-state-metrics/templates/stsdiscovery-role.yaml"
+
+_proxy_image: nginxinc/nginx-unprivileged
+_proxy_image_tag: 1.20-alpine
+_proxy_user_id: 101

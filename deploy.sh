@@ -4,6 +4,9 @@
 
 #This script installs all dependencies needed to run the Smart Edge deploy on dev machine.
 
+SCRIPT_PATH=$( cd "$(dirname "${BASH_SOURCE[0]}")" || exit ; pwd -P )
+cd "$SCRIPT_PATH" || exit
+
 if [ -f /etc/os-release ]; then
     # shellcheck disable=SC1091
     . /etc/os-release

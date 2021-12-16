@@ -3,7 +3,7 @@
 
 ---
 
-_helm_version: "v3.1.2"
+_helm_version: "v3.7.0"
 _helm_name: "helm-{{ _helm_version }}-linux-amd64"
 _helm_download_url: "https://get.helm.sh"
 _helm_download_item: "{{ _helm_name }}.tar.gz"

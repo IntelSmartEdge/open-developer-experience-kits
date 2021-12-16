@@ -7,11 +7,6 @@
   register: go_version_file_cat
   changed_when: false
 
-- name: update golang download url
-  set_fact:
-    golang_download_url: "{{ offline_golang_url }}/{{ golang_download_name }}"
-  when: offline_role | default(False) and offline_golang_url is defined
-
 - name: set expected golang version as in VERSION file
   set_fact:
     golang_version_fullname: "{{ 'go' + (golang_version | string) }}"
@@ -22,7 +17,3 @@
 
 - name: install packages
   include_tasks: install_packages.yml
-
-- name: install offline packages
-  include_tasks: offline.yml
-  when: offline_role | default(False)

@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- multus-daemonset-crio.yml
+
+patchesJson6902:
+- target:
+    group: "apiextensions.k8s.io"
+    version: v1
+    kind: CustomResourceDefinition
+    name: "network-attachment-definitions.k8s.cni.cncf.io"
+  path: crd-patch.yml
+- target:
+    group: "rbac.authorization.k8s.io"
+    version: v1
+    kind: ClusterRole
+    name: "multus"
+  path: cr-patch.yml
+- target:
+    version: v1
+    kind: DaemonSet
+    name: "kube-multus-ds"
+  path: ds-patch.yml

@@ -3,24 +3,24 @@
 
 ---
 - name: reconfigure unattended-upgrades package
-  become: true
+  become: yes
   command: dpkg-reconfigure --priority=low unattended-upgrades
   args:
     creates: "/etc/apt/apt.conf.d/20auto-upgrades"
 
 - name: disable automatic package updates
-  become: true
+  become: yes
   replace:
     path: "{{ item }}"
     regexp: "(APT::Periodic::.* )\"1\";$"
     replace: "\\1\"0\";"
-    mode: 0600
+    mode: a=,u=rw
   with_items:
     - "/etc/apt/apt.conf.d/20auto-upgrades"
     - "/etc/apt/apt.conf.d/10periodic"
 
 - name: ensure that main, restricted, universe and multiverse repositories are enabled
-  become: true
+  become: yes
   apt_repository:
     repo: "{{ item }}"
   with_items:

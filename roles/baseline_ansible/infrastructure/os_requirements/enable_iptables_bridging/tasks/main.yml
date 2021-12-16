@@ -17,8 +17,8 @@
         path: /etc/modules-load.d/br_netfilter.conf
         line: br_netfilter
         create: true
-        mode: 0644
-      become: true
+        mode: a=r,u+w
+      become: yes
 
     - name: enable net.bridge.bridge-nf-call-ip(6)tables settings
       sysctl:
@@ -29,4 +29,4 @@
       loop:
         - net.bridge.bridge-nf-call-ip6tables
         - net.bridge.bridge-nf-call-iptables
-  become: true
+  become: yes

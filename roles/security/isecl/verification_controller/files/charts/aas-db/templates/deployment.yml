@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.aasDB.appName }}-deployment
+  namespace: {{ .Values.aasDB.nameSpace }}
+  labels:
+    app: {{ .Values.aasDB.appName }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.aasDB.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.aasDB.appName }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.aasDB.appName }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - -c
+            - hba_file=/etc/postgresql/config/pg_hba.conf
+            - -c
+            - config_file=/etc/postgresql/config/postgresql.conf
+          env:
+            - name: POSTGRES_DB
+              value: aasdb
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.aasDB.name }}-credentials
+                  key: AAS_DB_USERNAME
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.aasDB.name }}-credentials
+                  key: AAS_DB_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: {{ .Values.aasDB.name }}-config
+              mountPath: /etc/postgresql/config/
+              readOnly: true
+            - name: {{ .Values.aasDB.name }}-certs
+              mountPath: /etc/postgresql/secrets/
+              readOnly: true
+            - name: {{ .Values.aasDB.name }}-data
+              mountPath: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: {{ .Values.aasDB.port }}
+      volumes:
+        - name: {{ .Values.aasDB.name }}-config
+          configMap:
+            name: {{ .Values.aasDB.name }}-config
+            defaultMode: 0640
+        - name: {{ .Values.aasDB.name }}-certs
+          secret:
+            secretName: {{ .Values.aasDB.name }}-certs
+            defaultMode: 0640
+        - name: {{ .Values.aasDB.name }}-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.aasDB.name }}-pvc

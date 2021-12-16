@@ -1,0 +1,116 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Get hosts EK Certificate
+  block:
+  - name: Create temporary dir
+    tempfile:
+      state: directory
+      suffix: ek-cert
+    register: hosts_ek_cert_temp_dir
+
+  - name: Get RSA 2048 EK certificate from NVRAM
+    command: tpm2_nvread -C o -o ek.cer 0x1c00002
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    become: yes
+
+  # Extract TPM endorsement root CA URI
+  - name: Get TPM root CA certificate URI
+    shell: openssl x509 -in ek.cer -inform der -text -noout | sed -n 's/ *CA Issuers - URI://p'
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: host_tpm_issuer_root_ca_uri
+
+  - name: Check if TPM root CA URI is available
+    fail:
+      msg: Failed to get TPM root CA URI
+    when: host_tpm_issuer_root_ca_uri.stdout | length == 0
+
+  # Replace space if present in root CA url with char '%20'
+  - name: Set TPM root CA certificate URI
+    set_fact:
+      issuer_cert_uri: "{{ host_tpm_issuer_root_ca_uri.stdout | regex_replace(' ', '%20') }}"
+
+  - name: Set TPM root CA certificate name
+    set_fact:
+      tpm_root_ca: tpm_issuer_root_ca.cer
+
+  - name: Download TPM root CA certificate
+    uri:
+      method: GET
+      url: "{{ issuer_cert_uri }}"
+      validate_certs: no
+      dest: "{{ hosts_ek_cert_temp_dir.path }}/{{ tpm_root_ca }}"
+      status_code:
+        - 200
+    register: tpm_issuer_root_ca
+    until: tpm_issuer_root_ca is not failed
+    retries: 10
+    delay: 10
+
+  - name: Get TPM root CA certificate name
+    shell: |
+      openssl x509 -in {{ tpm_root_ca }} -inform der -text -noout | sed -n 's/ *Subject: CN *= //p' | awk -F'+' '{print $1}'
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: host_tpm_issuer_root_ca_name
+
+  - name: Convert TPM root certificate to PEM without headers
+    command: base64 --wrap=0 {{ tpm_root_ca }}
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: host_tpm_issuer_root_ca_pem
+
+  always:
+    - name: Cleanup temp dir
+      file:
+        path: "{{ hosts_ek_cert_temp_dir.path }}"
+        state: absent
+
+- name: Get HVS endorsement certificates
+  uri:
+    method: GET
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates?domain=ek"
+    headers:
+      Accept: application/json
+    body:
+      username: "{{ isecl_users_global_admin_username }}"
+      password: "{{ isecl_users_global_admin_password }}"
+    body_format: json
+    validate_certs: no
+    return_content: yes
+    status_code:
+      - 200
+  register: hvs_endorsement_certs
+  until: hvs_endorsement_certs is not failed
+  retries: 10
+  delay: 10
+
+- name: Find EK certificate in HVS endorsment certificates
+  set_fact:
+    endorsement_cert_info: "{{ hvs_endorsement_certs.json | json_query(endorsement_cert_query) }}"
+  vars:
+    endorsement_cert_query: "ca_certificate[?certificate=='{{ host_tpm_issuer_root_ca_pem.stdout }}'].name"
+
+- name: Add endorsement certificates to HVS
+  uri:
+    method: POST
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates"
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ isecl_global_admin_bearer_token }}"
+    body:
+      name: "{{ host_tpm_issuer_root_ca_name.stdout }}"
+      type: "ek"
+      certificate: "{{ host_tpm_issuer_root_ca_pem.stdout }}"
+    body_format: json
+    validate_certs: no
+    return_content: yes
+    status_code:
+      - 201
+  register: add_endorsement_certs_to_hvs
+  until: add_endorsement_certs_to_hvs is not failed
+  retries: 10
+  delay: 10
+  when: "endorsement_cert_info | length == 0"

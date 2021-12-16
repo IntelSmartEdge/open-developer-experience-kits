@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.proxy.name }}
-          image: {{ .Values.proxy.image }}
+          image: "{{ .Values.proxy.image }}:{{ .Values.proxy.tag }}"
           volumeMounts:
             - name: proxy-config
               mountPath: {{ .Values.proxy.pathToNginxCfg }}
@@ -79,9 +79,5 @@ spec:
           configMap:
             name: {{ .Values.proxy.configMap }}
         - name: certs
-          projected:
-            sources:
-            - secret:
-                name: root-ca
-            - secret:
-                name: {{ .Values.proxy.secretName }}
+          secret:
+            secretName: {{ .Values.proxy.secretName }}

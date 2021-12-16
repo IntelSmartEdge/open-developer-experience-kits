@@ -12,7 +12,7 @@
     package:
       name: python-requests
       state: absent
-    become: true
+    become: yes
     register: python_requests_removed
 
   # ansible lint E503: https://ansible-lint.readthedocs.io/en/latest/default_rules.html#tasks-that-run-when-changed-should-likely-be-handlers
@@ -21,7 +21,7 @@
     pip:
       name: requests
       state: present
-    become: true
+    become: yes
     when: python_requests_removed.changed
   when:
      - ansible_os_family == "RedHat"

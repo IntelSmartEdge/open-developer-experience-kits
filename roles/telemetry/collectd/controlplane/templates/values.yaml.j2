@@ -25,8 +25,9 @@ proxy:
     internalCollectdPort: 9104
     serverName: "{{ _proxy_server_name }}"
     name: collectd-proxy
-    certsDest: /root/certs/collectd
-    image: nginx:alpine
+    certsDest: /opt/collectd/certs
+    image: nginxinc/nginx-unprivileged
+    tag: 1.20-alpine
     pathToNginxCfg: /etc/nginx/nginx.conf
     configMap: collectd-proxy-config
     secretName: "{{ _proxy_secret_name }}"

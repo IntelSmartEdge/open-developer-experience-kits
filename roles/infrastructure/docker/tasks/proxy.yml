@@ -6,7 +6,7 @@
   file:
     name: .docker
     state: directory
-    mode: 0777
+    mode: a=rx,u+w
 
 - name: check if previous docker config exists
   stat:
@@ -41,13 +41,13 @@
       file:
         name: /etc/systemd/system/docker.service.d
         state: directory
-        mode: 0777
-      become: true
+        mode: a=rx,u+w
+      become: yes
     - name: create http-proxy.conf from template
       template:
         src: http-proxy.conf.j2
         dest: /etc/systemd/system/docker.service.d/http-proxy.conf
         mode: preserve
-      become: true
+      become: yes
       notify:
         - enable and start docker service

@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+_cert_manager_chart: "jetstack https://charts.jetstack.io"
+_cert_manager_version: v1.6.1
+_cert_manager_namespace: cert-manager
+_ca_secret_name: root-ca
+_cmctl_version: v1.6.1
+_cmctl_url: https://github.com/jetstack/cert-manager/releases/download/{{ _cmctl_version }}/cmctl-linux-amd64.tar.gz
+_subject: "*.smartedge.open"

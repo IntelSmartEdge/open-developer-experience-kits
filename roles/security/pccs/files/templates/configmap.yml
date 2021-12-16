@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configmap.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  default.json: |
+    {
+        "HTTPS_PORT": "{{ .Values.configmap.port }}",
+        "hosts": "{{ .Values.configmap.hosts }}",
+        "uri": "https://api.trustedservices.intel.com/sgx/certification/v3/",
+        "ApiKey": "{{ .Values.configmap.apiKey }}",
+        "proxy": "{{ .Values.configmap.proxy }}",
+        "RefreshSchedule": "0 0 1 * * *",
+        "UserTokenHash": "{{ .Values.configmap.userPassword }}",
+        "AdminTokenHash": "{{ .Values.configmap.adminPassword }}",
+        "CachingFillMode": "LAZY",
+        "LogLevel": "info",
+        "DB_CONFIG": "sqlite",
+        "sqlite": {
+            "database": "database",
+            "username": "username",
+            "password": "password",
+            "options": {
+                "host": "localhost",
+                "dialect": "sqlite",
+                "pool": {
+                    "max": 5,
+                    "min": 0,
+                    "acquire": 30000,
+                    "idle": 10000
+                },
+                "define":{
+                    "freezeTableName": true
+                },
+                "logging" : false,
+                "storage": "pckcache.db"
+            }
+        },
+        "mysql": {
+            "database" : "pckcache",
+            "username" : "root",
+            "password" : "mypass",
+            "options" : {
+                "host": "localhost",
+                "dialect": "mysql",
+                "pool": {
+                    "max": 5,
+                    "min": 0,
+                    "acquire": 30000,
+                    "idle": 10000
+                },
+                "define": {
+                    "freezeTableName": true
+                },
+                "logging" : false
+            }
+        }
+    }

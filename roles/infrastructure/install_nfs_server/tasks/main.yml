@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: enable and start nfs-server service
+  service:
+    name: nfs-server
+    enabled: yes
+    state: started
+  become: yes
+
+- name: create nfs share directory
+  file:
+    state: directory
+    path: "{{ nfs_dir_path }}"
+    owner: "{{ project_user }}"
+    group: "{{ project_group }}"
+    mode: u=rwx,g=r,o=r
+  become: yes
+
+- name: add worker nodes ip to nfs mount share
+  lineinfile:
+    path: /etc/exports
+    line: "{{ nfs_dir_path }} {{ item }}(rw,sync,no_root_squash,no_subtree_check)"
+  loop: "{{ nfs_clients | default([]) }}"
+  become: yes
+
+- name: export all mount paths
+  command: exportfs -rav
+  changed_when: false
+  become: yes
+
+- name: open NFS server firewall ports
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports: "{{ nfs_server_open_ports }}"

@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+# #############################################################
+# PCCS server address
+# support V2 version PCCS
+#PCCS_URL=https://<IP>:8081/sgx/certification/v2/platforms
+# support V3 version PCCS
+PCCS_URL=https://{{ sgx_pccs_ip }}:{{ sgx_pccs_port }}/sgx/certification/v3/platforms
+# To accept insecure HTTPS cert, set this option to FALSE
+USE_SECURE_CERT={{ sgx_use_secure_cert }}
+###############################################################
+
+
+###############################################################
+# when access pccs, user need provide the token
+user_token = {{ pccs_user_token }}
+###############################################################
+
+
+###############################################################
+# Proxy settings:proxy type could be the following three types
+# direct: means no proxy used
+# default: system default proxy will be used
+# manual: when this type was selected, user need provide the proxy_url
+
+#proxy_type    = direct
+proxy_type    = default
+#proxy_type  = manual
+#proxy_url   = http://proxy_url:proxy_port
+###############################################################

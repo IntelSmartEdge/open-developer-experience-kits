@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: Enable SGX
+  debug:
+    msg: "SGX is only for Ubuntu"
+  when: ansible_os_family != "Debian"
+
+- name: check SGX prerequisites
+  include_tasks: "precheck.yml"
+  when: ansible_os_family == "Debian"
+
+- include_tasks: "debian.yml"
+  when: ansible_os_family == "Debian"

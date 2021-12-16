@@ -1,0 +1,103 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+# Default values for hvs-db-chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+namespace: isecl
+
+replicaCount: 1
+
+image:
+  repository: postgres
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "11.7"
+
+podSecurityContext:
+  fsGroup: 1001
+
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+
+container:
+  name: hvsdb
+  args:
+    - -c
+    - hba_file=/etc/postgresql/config/pg_hba.conf
+    - -c
+    - config_file=/etc/postgresql/config/postgresql.conf
+  containerPort: 5432
+
+environment:
+  - name: POSTGRES_DB
+    value: hvsdb
+  - name: POSTGRES_USER
+    valueFrom:
+      secretKeyRef:
+        name: hvs-db-credentials
+        key: HVS_DB_USERNAME
+  - name: POSTGRES_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: hvs-db-credentials
+        key: HVS_DB_PASSWORD
+  - name: PGDATA
+    value: /var/lib/postgresql/data/pgdata
+
+postgresConf:
+  sqlConf: |
+    listen_addresses = '*'
+    port = 5432
+    ssl = on
+    ssl_cert_file = '/etc/postgresql/secrets/server.crt'
+    ssl_key_file = '/etc/postgresql/secrets/server.key'
+    ssl_ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256'
+  hbaConf: |
+    local  all  all trust
+    hostssl hvsdb hvsdbuser 10.1.0.0/8 md5
+
+dbSecrets:
+  HVS_DB_USERNAME: hvsdbuser
+  HVS_DB_PASSWORD: hvsdbpassword
+
+podAnnotations: {}
+
+service:
+  type: ClusterIP
+  port: 5432
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+persistentVolumeConfig:
+  storageClassName: nfs
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: <nfs-client-mount-path>/isecl/hvs/db
+    server: <nfs-server-ip/nfs-server-hostname>
+  storage: 1Gi
+
+volumeConfig:
+  hvsDbConfigPath: /etc/postgresql/config/
+  hvsDbCertsPath: /etc/postgresql/secrets/
+  hvsDbDataPath: /var/lib/postgresql/data/pgdata

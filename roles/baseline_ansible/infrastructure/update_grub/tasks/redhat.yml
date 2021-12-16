@@ -12,7 +12,7 @@
 - name: update MBR grub2.cfg
   command: grub2-mkconfig -o /etc/grub2.cfg
   changed_when: true
-  become: true
+  become: yes
   when:
   - grub_mbr_cfg.stat.exists
   notify:
@@ -27,7 +27,7 @@
 - name: update MBR grub2-efi.cfg
   command: grub2-mkconfig -o /etc/grub2-efi.cfg
   changed_when: true
-  become: true
+  become: yes
   when:
   - grub_efi_cfg.stat.exists
   notify:

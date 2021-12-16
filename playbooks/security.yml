@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# Playbook for security features
+- hosts: edgenode_group
+  roles:
+    - role: security/isecl/label_node
+      when: platform_attestation_node | default(False)
+
+- hosts: controller_group
+  roles:
+    - role: security/isecl/common
+      when: platform_attestation_controller | default(False) or platform_attestation_node | default(False)
+    - role: security/isecl/verification_controller
+      when: platform_attestation_controller | default(False)
+    - role: security/isecl/controlplane
+      when: platform_attestation_node | default(False)
+
+- hosts: controller_group
+  roles:
+    - role: security/pccs
+      when: pccs_enable | default(False)

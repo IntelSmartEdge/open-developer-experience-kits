@@ -1,8 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2020 Intel Corporation
+# Copyright (c) 2020-2021 Intel Corporation
 
 ---
-
 harbor_api_version: v2.0
 expose_type: nodePort
 tls_enable: true
@@ -14,8 +13,11 @@ _registry_host: "{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
 _registry_ip_address: "{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
 
 _git_repo_harbor: "https://github.com/goharbor/harbor-helm.git"
-_harbor_helm_tag: "v1.7.2"
 _git_repo_dest_harbor: "{{ project_dir }}/harbor"
+
+_harbor_app_version: "v2.3.4"
+_harbor_helm_tag: "v1.7.4"
+_harbor_namespace: "harbor"
 _harbor_pv_dir: "{{ project_dir }}/harbor_pv_disks"
 
 harbor_db_storage: 1Gi
@@ -24,3 +26,5 @@ harbor_registry_storage: 15Gi
 harbor_jobservice_storage: 1Gi
 harbor_chartmuseum_storage: 1Gi
 harbor_redis_storage: 1Gi
+
+_harbor_project_request_content: '{ "project_name": "intel", "metadata": { "public": "true" }, "public": true}'

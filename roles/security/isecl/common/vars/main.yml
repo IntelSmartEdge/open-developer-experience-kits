@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+install_dependencies:
+  RedHat:
+    - tar
+  Debian:
+    - tar
+    - wget
+    - git
+    - patch
+    - zip
+    - unzip
+    - make
+    - cabextract
+    - g++-8
+    - build-essential
+    - tpm-udev
+    - libtss2-esys0
+    - init-system-helpers
+    - libgcrypt20-dev
+    - libtss2-dev
+    - makeself

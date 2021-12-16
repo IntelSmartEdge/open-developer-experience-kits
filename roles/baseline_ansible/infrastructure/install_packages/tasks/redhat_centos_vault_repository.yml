@@ -3,17 +3,17 @@
 
 ---
 - name: ensure /etc/yum.repos.d/CentOS-Vault.repo exists
-  become: true
+  become: yes
   copy:
     content: ""
     dest: /etc/yum.repos.d/CentOS-Vault.repo
     force: false
-    mode: 0644
+    mode: a=r,u+w
     owner: root
     group: root
 
 - name: update CentOS Vault yum repository on CentOS 7
-  become: true
+  become: yes
   yum_repository:
     name: C{{ item }}-base
     description: CentOS-{{ item }} - Base
@@ -26,7 +26,7 @@
     - ansible_distribution_version >= item or ansible_distribution_version in item
 
 - name: update CentOS Vault yum repository on CentOS 8
-  become: true
+  become: yes
   yum_repository:
     name: C{{ full_dist_version }}-base
     description: CentOS-{{ full_dist_version }} - Base

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Check settings
+  block:
+    - name: Check if APiKey is set
+      fail:
+        msg: "PCCS ApiKey not set! Set `pccs_api_key`."
+      when: pccs_api_key is not defined or pccs_api_key | length == 0
+
+    - name: Check if PCCS user password is set
+      fail:
+        msg: "PCCS user password not set! Set `pccs_user_password`."
+      when: pccs_user_password is not defined or pccs_user_password | length == 0
+
+    - name: Check if PCCS admin password is set
+      fail:
+        msg: "PCCS admin password not set! Set `pccs_admin_password`."
+      when: pccs_admin_password is not defined or pccs_admin_password | length == 0
+
+  when: pccs_enable | default(False)

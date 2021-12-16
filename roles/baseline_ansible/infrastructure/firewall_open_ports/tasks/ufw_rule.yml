@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: "For port {{ item[0] }} perform {{ item[1] }}"
+  ufw: 
+    rule: "{{ item[1] }}"
+    port: "{{ item[0].split('/')[0] }}"
+    proto: "{{ item[0].split('/')[1] | lower }}"
+  register: ufw_status
+  until: ufw_status is not failed
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: " {{ retry_delay | default(3) }}"
+  become: yes

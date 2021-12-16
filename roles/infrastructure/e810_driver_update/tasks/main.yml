@@ -2,31 +2,40 @@
 # Copyright (c) 2021 Intel Corporation
 
 ---
+- name: Check if Secure Boot enabled
+  shell: "set -o pipefail && bootctl status 2> /dev/null | grep 'Secure Boot: enabled' > /dev/null"
+  register: secure_boot_status
+  become: yes
+  changed_when: false
+  failed_when: false
 
-- name: build and load ice driver
+- name: Install drivers from source
   block:
-    - name: set facts
-      set_fact:
-        driver_name: "{{ _ice_name }}"
-        driver_version: "{{ _ice_ver }}"
-        driver_url: "{{ _ice_url }}"
-        driver_checksum: "{{ _ice_chksm }}"
-        current_mgmt_driver: "{{ _mgmt_driver }}"
+  - name: build and load ice driver
+    block:
+      - name: set facts
+        set_fact:
+          driver_name: "{{ _ice_name }}"
+          driver_version: "{{ _ice_ver }}"
+          driver_url: "{{ _ice_url }}"
+          driver_checksum: "{{ _ice_chksm }}"
+          current_mgmt_driver: "{{ _mgmt_driver }}"
 
-    - name: build ice driver
-      include_role:
-        name: baseline_ansible/infrastructure/build_nic_drivers
+      - name: build ice driver
+        include_role:
+          name: baseline_ansible/infrastructure/build_nic_drivers
 
-- name: build and load iavf driver
-  block:
-    - name: set facts
-      set_fact:
-        driver_name: "{{ _iavf_name }}"
-        driver_version: "{{ _iavf_ver }}"
-        driver_url: "{{ _iavf_url }}"
-        driver_checksum: "{{ _iavf_chksm }}"
-        current_mgmt_driver: "{{ _mgmt_driver }}"
+  - name: build and load iavf driver
+    block:
+      - name: set facts
+        set_fact:
+          driver_name: "{{ _iavf_name }}"
+          driver_version: "{{ _iavf_ver }}"
+          driver_url: "{{ _iavf_url }}"
+          driver_checksum: "{{ _iavf_chksm }}"
+          current_mgmt_driver: "{{ _mgmt_driver }}"
 
-    - name: build iavf driver
-      include_role:
-        name: baseline_ansible/infrastructure/build_nic_drivers
+      - name: build iavf driver
+        include_role:
+          name: baseline_ansible/infrastructure/build_nic_drivers
+  when: secure_boot_status.rc != 0

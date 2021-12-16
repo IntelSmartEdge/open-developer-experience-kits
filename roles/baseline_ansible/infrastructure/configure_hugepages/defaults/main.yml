@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+hugepages_enabled: false
+default_hugepage_size: 1G
+hugepages_1G: 4
+hugepages_2M: 0
+
+# amount of memory "protected" from hugepages allocation in MB
+mem_reserved: 1024

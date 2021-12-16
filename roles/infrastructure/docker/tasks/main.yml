@@ -38,7 +38,7 @@
       file:
         path: /etc/docker/
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
     - name: Generate daemon.json
       template:
         src: daemon.json.j2
@@ -46,14 +46,10 @@
         mode: preserve
       notify:
         - enable and start docker service
-  become: true
+  become: yes
 
 - name: restart services if needed
   meta: flush_handlers
 
 - name: set audit rules for docker
   include_tasks: audit.yml
-
-- name: download and load offline docker images
-  include_tasks: offline_images.yml
-  when: offline_enable | default(False)

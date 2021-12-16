@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- op: replace
+  path: "/spec/versions/0/schema/openAPIV3Schema"
+  value: 
+    type: object
+    properties:
+      spec:
+        type: object
+        properties:
+          config:
+            type: string

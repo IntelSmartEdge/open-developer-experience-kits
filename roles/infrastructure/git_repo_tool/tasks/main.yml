@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+--- 
+- name: Check for repo-init folder
+  register: git_repo_folder
+  stat: 
+    path: "{{ project_dir }}/git_repo_tool"
+
+- name: clone gitrepo repo
+  git: 
+    dest: "{{ project_dir }}/git_repo_tool"
+    repo: "https://gerrit.googlesource.com/git-repo"
+    version: "main"
+  when: "not git_repo_folder.stat.exists"
+
+- name: Check git-repo is installed
+  register: git_repo_bin
+  stat: 
+    path: "/usr/local/bin/repo"
+
+- name: Install repo init
+  command: "install -m 755 {{ project_dir }}/git_repo_tool/repo /usr/local/bin"
+  changed_when: false
+  become: true
+  when: "not git_repo_bin.stat.exists"

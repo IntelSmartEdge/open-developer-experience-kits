@@ -9,4 +9,11 @@
     masked: false
     state: restarted
     daemon_reload: true
-  become: true
+  become: yes
+
+- name: restart auditd
+  command: service auditd restart
+  become: yes
+  changed_when: true
+  args:
+    warn: false

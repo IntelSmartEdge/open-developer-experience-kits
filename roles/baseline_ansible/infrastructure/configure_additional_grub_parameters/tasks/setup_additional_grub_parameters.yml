@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: prepare additional grub parameters commandline string
+  set_fact:
+    additional_grub_parameters_cmdline: 'GRUB_CMDLINE_LINUX="${GRUB_CMDLINE_LINUX} {{ additional_grub_parameters }}" {{ additional_grub_parameters_marker }}'
+
+- name: set additional grub parameters in /etc/default/grub
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX="\${GRUB_CMDLINE_LINUX}(.*?)" {{ additional_grub_parameters_marker }}$'
+    line: '{{ additional_grub_parameters_cmdline }}'
+    state: present
+    mode: a=r,u+w,g+w
+  register: grub
+  become: yes

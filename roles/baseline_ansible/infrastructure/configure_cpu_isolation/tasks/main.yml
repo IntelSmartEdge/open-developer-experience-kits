@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: ensure that isolcpus settings are disabled when isolcpus_enabled is False
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=(.*?){{ isolcpus_marker }}$'
+    state: absent
+  register: grub
+  become: yes
+  when: not isolcpus_enabled
+
+- name: autogenerate isolcpus string from CMK isolated CPU count
+  include_tasks: autogenerate_isolcpus.yml
+  when:
+    - autogenerate_isolcpus
+    - cmk_enabled | default(false)
+
+- name: setup CPU isolation
+  include_tasks: setup_isolcpus.yml
+  when:
+    - isolcpus_enabled
+
+# noqa because include_role cannot be used in a handler
+- name: update grub  # noqa no-handler
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - grub.changed

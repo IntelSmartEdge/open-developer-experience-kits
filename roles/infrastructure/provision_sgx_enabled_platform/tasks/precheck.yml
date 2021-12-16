@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Install cpuid
+  package:
+    name: cpuid
+  become: yes
+
+- name: Check if SGX is enabled in BIOS
+  shell: set -o pipefail && cpuid | grep "SGX[0-9] supported" | head -1 | cut -d '=' -f2 | xargs
+  register: sgx_bios_enabled
+  changed_when: false
+  failed_when: false
+
+- name: Show precheck status
+  fail:
+    msg: SGX requested but not enabled in BIOS!
+  when: "'true' not in sgx_bios_enabled.stdout"

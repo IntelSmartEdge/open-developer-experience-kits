@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Check SGX parameters
+  block:
+  - name: Check PCCS IP address
+    fail:
+      msg: PCCS IP address not set!
+    when: sgx_pccs_ip is not defined or sgx_pccs_ip | length == 0
+
+  - name: Check PCCS port
+    fail:
+      msg: PCCS port not set!
+    when: sgx_pccs_port is not defined or sgx_pccs_port | length == 0
+
+  - name: Check PCCS user token
+    fail:
+      msg: PCCS user token not set!
+    when: pccs_user_token is not defined or pccs_user_token | length == 0
+  when: sgx_enabled | default(False)

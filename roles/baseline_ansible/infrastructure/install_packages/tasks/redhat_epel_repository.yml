@@ -12,16 +12,14 @@
       package:
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
         state: present
-  become: true
+  become: yes
   when:
-    - not offline_enable | default(false)
     - ansible_distribution == "RedHat"
 
 - name: install CentOS EPEL package
   package:
     name: epel-release
     state: present
-  become: true
+  become: yes
   when:
-    - not offline_enable | default(false)
     - ansible_distribution == "CentOS"

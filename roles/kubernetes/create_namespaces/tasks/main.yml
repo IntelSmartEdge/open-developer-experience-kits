@@ -5,6 +5,6 @@
 
 - name: create custom namespaces for CRD if specified
   include_role:
-    name: kubernetes/custom_namespace
+    name: baseline_ansible/kubernetes/custom_namespace
   vars:
-    - _custom_ns: [ "{{ system_namespace }}", "{{ application_namespace }}" ]
+    - _custom_ns: [ "{{ system_namespace }}", "{{ application_namespace }}", "{{ telemetry_namespace }}" ]

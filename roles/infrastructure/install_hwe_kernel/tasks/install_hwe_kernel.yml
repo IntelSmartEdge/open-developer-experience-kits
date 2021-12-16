@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install hwe-kernel packages
+  package:
+    name: linux-generic-hwe-20.04-edge
+    install_recommends: true
+  become: yes

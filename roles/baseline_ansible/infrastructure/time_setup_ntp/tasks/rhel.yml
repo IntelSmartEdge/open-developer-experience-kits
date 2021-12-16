@@ -15,14 +15,14 @@
         masked: false
         state: stopped
         daemon_reload: true
-      become: true
+      become: yes
 
     - name: disable default servers
       lineinfile:
         dest: /etc/chrony.conf
         regexp: "^NTP=*"
         state: absent
-      become: true
+      become: yes
 
     - name: prepare values
       set_fact:
@@ -33,7 +33,7 @@
         path: /etc/chrony.conf
         block: |
           {{ ntp_servers_prepared }}
-      become: true
+      become: yes
 
     - name: enable and start chronyd service
       systemd:
@@ -42,11 +42,11 @@
         masked: false
         state: restarted
         daemon_reload: true
-      become: true
+      become: yes
 
     - name: create ntp time set flag
       file:
         path: "{{ ntp_time_set }}"
         state: touch
-        mode: 0644
+        mode: a=r,u+w
   when: (ntp_servers | length) > 0

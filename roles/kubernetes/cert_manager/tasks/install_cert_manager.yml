@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: Create temporary directory for cert-manager installation
+  tempfile:
+    state: directory
+    prefix: cert-manager
+  register: temp_dir
+
+- name: Add cert-manager helm charts
+  command: helm repo add {{ _cert_manager_chart }}
+  changed_when: false
+
+- name: Update helm repo
+  command: helm repo update
+  changed_when: false
+
+- name: template values yaml
+  template:
+    src: "values.yaml.j2"
+    dest: "{{ temp_dir.path }}/values.yaml"
+    mode: u+rw
+
+- name: Execute helm install command
+  command: helm install cert-manager jetstack/cert-manager \
+    --namespace {{ _cert_manager_namespace }} \
+    --create-namespace \
+    --version {{ _cert_manager_version }} \
+    --set installCRDs=true \
+    -f {{ temp_dir.path }}/values.yaml
+  changed_when: true
+
+- name: Check if CA secret exists
+  command: kubectl get secret root-ca --namespace={{ _cert_manager_namespace }}
+  failed_when: false
+  changed_when: false
+  register: rootca_query
+
+- name: Create CA secret if it doesn't exists
+  block:
+    - name: create root CA certificate
+      command: "{{ project_dir }}/scripts/tls_pair.sh {{ _subject }} {{ temp_dir.path }}"
+      changed_when: true
+    - name: create secret with root CA
+      command: kubectl create secret tls {{ _ca_secret_name }}
+        --cert={{ temp_dir.path }}/cert.pem
+        --key={{ temp_dir.path }}/key.pem
+        --namespace={{ _cert_manager_namespace }}
+  when: rootca_query.rc != 0
+
+- name: Template ClusterIssuer manifest
+  template:
+    src: "issuer.yaml.j2"
+    dest: "{{ temp_dir.path }}/issuer.yaml"
+    mode: u+rw
+
+- name: Apply ClusterIssuer manifest
+  command: "kubectl apply -f {{ temp_dir.path }}/issuer.yaml"
+  changed_when: true
+
+- name: Remove temporary folder
+  file:
+    path: "{{ temp_dir.path }}"
+    state: absent

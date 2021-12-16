@@ -26,16 +26,6 @@ Role requires following variables to be set:
         - { url: 'github.com/cloudflare/cfssl/cmd/cfssljson' }
 ```
 
-## Offline installation
-
-```
-  roles:
-    - role: install_golang
-      offline_role: "{{ offline_enable | default(False) and ('controller_group' in group_names or single_node_deployment) }}"
-      offline_golang_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
-      offline_gomod_url: https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
-```
-
 ## Additional exports
 
 ```

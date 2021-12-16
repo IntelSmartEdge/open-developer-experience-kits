@@ -2,31 +2,32 @@
 # Copyright (c) 2020 Intel Corporation
 
 ---
-
 - name: check if cadvisor already exists
-  command: helm status cadvisor -n telemetry
+  command: helm status cadvisor -n {{ telemetry_namespace }}
   failed_when: false
   changed_when: false
   register: get_cadvisor
 
 - name: install cadvisor
   block:
-  - name: create certificates for cadvisor
-    include_tasks: ../../certs/tasks/create_certificates.yml
-    vars:
-      tls_secret_name: "{{ _proxy_secret_name }}"
-      proxy_name: "{{ _proxy_server_name }}"
-  - name: copy Helm chart to the master node
-    copy:
-      src: "{{ role_path }}/charts/"
-      dest: "{{ _cadvisor_chart_dir }}"
-      mode: preserve
-  - name: template values.yml file into Chart directory
-    template:
-      src: values.yaml.j2
-      dest: "{{ _cadvisor_chart_dir }}/values.yaml"
-      mode: preserve
-  - name: install cadvisor using Helm
-    command: "helm install cadvisor --namespace telemetry {{ _cadvisor_chart_dir }}"
-    changed_when: true
+    - name: create certificates for cadvisor
+      include_role:
+        name: kubernetes/certs
+      vars:
+        tls_secret_name: "{{ _proxy_secret_name }}"
+        desired_namespace: "{{ telemetry_namespace }}"
+        dns_names: ['cadvisor']
+    - name: copy Helm chart to the master node
+      copy:
+        src: "{{ role_path }}/charts/"
+        dest: "{{ _cadvisor_chart_dir }}"
+        mode: preserve
+    - name: template values.yml file into Chart directory
+      template:
+        src: values.yaml.j2
+        dest: "{{ _cadvisor_chart_dir }}/values.yaml"
+        mode: preserve
+    - name: install cadvisor using Helm
+      command: "helm install cadvisor --namespace telemetry {{ _cadvisor_chart_dir }}"
+      changed_when: true
   when: get_cadvisor.rc != 0

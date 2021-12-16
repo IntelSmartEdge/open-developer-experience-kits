@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.aas.name }}-svc
+  namespace: {{ .Values.aas.nameSpace }}
+  labels:
+    env: demo
+    app: {{ .Values.aas.name }}
+spec:
+  selector:
+    app: {{ .Values.aas.name }}
+  type: NodePort
+  ports:
+    - port: {{ .Values.aas.port }}
+      targetPort: {{ .Values.aas.port }}
+      nodePort: {{ .Values.service.nodePort }}

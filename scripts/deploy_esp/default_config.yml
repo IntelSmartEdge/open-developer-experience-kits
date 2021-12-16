@@ -17,7 +17,7 @@ esp:
   # URL of the ESP's repository.
   url: https://github.com/intel/Edge-Software-Provisioner
   # Branch to be checked out.
-  branch: v2.0
+  branch: v2.0.2
   # ESP destination path.
   # This will be a path where ESP will be cloned to (relative to the script working directory).
   dest_dir: './esp'
@@ -77,7 +77,8 @@ profiles:
     url: https://github.com/smart-edge-open/profiles.git
 
     # Branch to be checked out
-    branch: smart-edge-open-21.09-b
+    branch: smart-edge-open-21.12
+
     # Profile scenario
     # Possible values: single-node, multi-node
     scenario: single-node
@@ -87,7 +88,7 @@ profiles:
       # Address of the Experience Kit repository
       url: https://github.com/smart-edge-open/open-developer-experience-kits.git
       # Branch to be checked out
-      branch: smart-edge-open-21.09
+      branch: smart-edge-open-21.12
       # Deployment to be performed
       # Possible values: dek
       deployment: dek
@@ -101,6 +102,16 @@ profiles:
     account:
       username: smartedge-open
       password: smartedge-open
+  
+    # Secure boot and trusted media platform options.
+    bmc:
+      secure_boot: true
+      tpm: true
+      # outbound management ip address
+      address: ''
+      user: ''
+      password: ''
+
 
     # Experience Kit group_vars overrides.
     # This section can be used to supply extra variables to influence the deployment of the Experience Kit.

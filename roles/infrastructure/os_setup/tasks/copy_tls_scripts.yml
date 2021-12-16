@@ -6,7 +6,7 @@
   copy:
     src: "{{ item }}"
     dest: "{{ project_dir }}/scripts/{{ item }}"
-    mode: a+r,u+rx
+    mode: a=r,u+x
   loop:
     - "entrypoint_tls.sh"
     - "tls_pair.sh"

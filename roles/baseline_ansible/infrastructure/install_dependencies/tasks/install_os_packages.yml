@@ -23,7 +23,7 @@
       register: pkg_mgr_results
       retries: "{{ number_of_retries | default(3) }}"
       until: pkg_mgr_results is success
-  become: true
+  become: yes
   when:
     - install_dependencies_full_list | length>0
 
@@ -34,7 +34,7 @@
       register: pkg_mgr_results
       retries: "{{ number_of_retries | default(3) }}"
       until: pkg_mgr_results is success
-  become: true
+  become: yes
   when:
     - install_excluded_packages is defined
     - install_excluded_packages | length>0

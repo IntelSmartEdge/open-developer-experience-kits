@@ -23,14 +23,3 @@ Based on https://golang.org/src/crypto/x509/root_linux.go
 "/etc/pki/tls/certs",           // Fedora/RHEL
 "/etc/openssl/certs",           // NetBSD
 "/var/ssl/certs",               // AIX
-
-# Configuration
-
-## Offline installation
-
-```
-  roles:
-    - role: install_openssl
-      offline_role: "{{ offline_enable | default(False) and ('controller_group' in group_names or single_node_deployment) }}"
-      offline_openssl_download_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
-```

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+_redeplyoment_lock_file: "{{ project_dir }}/.redeplyoment.lock"

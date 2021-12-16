@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+- name: Check Intel-secl node settings
+  block:
+    - name: Check control plane IP
+      fail:
+        msg: "Isecl control plane IP not set!"
+      when: isecl_control_plane_ip | length == 0
+
+    - name: Check CMS hash
+      fail:
+        msg: "CMS hash not set!"
+      when: isecl_cms_tls_hash | length == 0
+  when: platform_attestation_node | default(False)
+
+- name: Check Intel-secl controller settings
+  block:
+    - name: Check TA SAN list
+      fail:
+        msg: "TA SAN list empty!"
+      when: isecl_ta_san_list | length == 0
+  when: platform_attestation_controller | default(False)

@@ -13,7 +13,7 @@ Requires defined `restart` handler, e.g.:
   handlers:
     - name: reboot server
       reboot: { reboot_timeout: 1200 }
-      become: true
+      become: yes
 ```
 
 Example usage:

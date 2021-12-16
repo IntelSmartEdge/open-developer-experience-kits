@@ -7,7 +7,3 @@
 _available_kubernetes_cnis:
 - calico
 # - ovn4nfv
-
-_cni_offline_path:
-- ./roles
-- ./ceek/roles

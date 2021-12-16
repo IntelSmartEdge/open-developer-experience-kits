@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- op: replace
+  path: "/metadata/name"
+  value: kube-multus-ds-amd64
+- op: add
+  path: "/spec/template/spec/nodeSelector"
+  value: 
+    kubernetes.io/arch: amd64
+- op: replace
+  path: "/spec/template/spec/containers/0/image"
+  value: "{{ _registry_ip_address }}:{{ _registry_port }}/intel/multus:{{ _multus_image_tag }}"
+- op: replace
+  path: "/spec/template/spec/containers/0/command"
+  value: ["/bin/sh","-c"]
+- op: replace
+  path: "/spec/template/spec/containers/0/args"
+  value: ["rename --verbose '.old' '' /host/etc/cni/net.d/* && \
+         /entrypoint.sh --multus-conf-file=auto --cni-version=0.3.1 --rename-conf-file=true"]
+- op: remove
+  path: "/spec/template/spec/containers/0/securityContext/capabilities"
+- op: replace
+  path: "/spec/template/spec/containers/0/volumeMounts/2/mountPath"
+  value: /host/opt/cni/bin
+- op: remove
+  path: "/spec/template/spec/containers/0/volumeMounts/0"
+- op: remove
+  path: "/spec/template/spec/terminationGracePeriodSeconds"
+- op: replace
+  path: "/spec/template/spec/volumes/2/hostPath/path"
+  value: /opt/cni/bin
+- op: remove
+  path: "/spec/template/spec/volumes/0"

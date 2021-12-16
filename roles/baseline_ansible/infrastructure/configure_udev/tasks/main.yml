@@ -7,9 +7,9 @@
     line: KERNEL=="kvm", GROUP="kvm", MODE="0666"
     state: present
     create: true
-    mode: 0644
+    mode: a=r,u+w
   register: add_kvm_rule
-  become: true
+  become: yes
 
 - name: Update if rule changed
   block:
@@ -21,6 +21,6 @@
     command: udevadm trigger
     changed_when: true
 
-  become: true
+  become: yes
   when:
     - add_kvm_rule.changed

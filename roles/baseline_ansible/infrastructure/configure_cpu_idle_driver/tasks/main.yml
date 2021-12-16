@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: remove cpu idle driver settings when setting is disabled
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=(.*?){{ idle_driver_marker }}$'
+    state: absent
+  register: grub
+  become: yes
+  when: not cpu_idle_driver_setup_enabled
+
+- name: setup CPU idle driver
+  include_tasks: setup_cpu_idle_driver.yml
+  when:
+    - cpu_idle_driver_setup_enabled
+
+# noqa because include_role cannot be used in a handler
+- name: update grub  # noqa no-handler
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - grub.changed

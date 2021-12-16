@@ -5,13 +5,15 @@
 - name: update cache
   package:
     update_cache: true
-  become: true
+  become: yes
+  retries: "{{ number_of_retries }}"
+  delay: "{{ retry_delay }}"
 
 - name: install docker OS dependencies and role utils
   package:
     name: "{{ _docker_os_dependencies }}"
     state: present
-  become: true
+  become: yes
 
 - name: install OS specific
   include_tasks: "install_{{ ansible_os_family|lower }}.yml"
@@ -22,13 +24,7 @@
     state: present
   notify:
     - enable and start docker service
-  become: true
-
-- name: change docker completion url if offline mode
-  set_fact:
-    _docker_completion_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/docker"
-    _docker_compose_completion_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/docker-compose"
-  when: offline_enable | default(False)
+  become: yes
 
 - name: setup docker bash completion
   block:
@@ -36,7 +32,7 @@
       get_url:
         url: "{{ _docker_completion_url }}"
         dest: "/etc/bash_completion.d"
-      become: true
+      become: yes
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
@@ -45,7 +41,7 @@
       get_url:
         url: "{{ _docker_compose_completion_url }}"
         dest: "/etc/bash_completion.d"
-      become: true
+      become: yes
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
@@ -56,5 +52,5 @@
     name: docker
     state: present
     executable: pip3
-  become: true
+  become: yes
   when: ansible_python.version.major == 3

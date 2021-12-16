@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+# Default values for nats-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: nats
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "2.2.4-alpine3.13"
+
+namespace: isecl
+appName: nats
+
+podSecurityContext:
+  fsGroup: 1001
+
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: NodePort
+  port: 80
+  ports:
+    - name: client
+      port: 4222
+      nodePort: 30222
+    - name: cluster
+      port: 6222
+
+volumes:
+  mounts:
+    - name: config-volume
+      configMap:
+        name: nats-config
+    - name: pid
+      emptyDir: {}
+    - name: nats-certs-volume
+      secret:
+        secretName: nats-certs
+        defaultMode: 0640
+  mountPaths:
+    - name: config-volume
+      mountPath: /etc/nats-config
+    - name: pid
+      mountPath: /var/run/nats
+    - name: nats-certs-volume
+      mountPath: /etc/nats-certs
+
+natsServerContainerConfig:
+  ports:
+    - containerPort: 4222
+      name: client
+    - containerPort: 6222
+      name: cluster
+  terminationGracePeriodSeconds: 60
+  shareProcessNamespace: true
+
+natsConfig:
+  natsConf: |
+    pid_file: "/var/run/nats/nats.pid"
+    cluster {
+      port: 6222
+      routes [
+        nats://nats-0.nats.isecl.svc:6222
+        nats://nats-1.nats.isecl.svc:6222
+      ]
+      cluster_advertise: $CLUSTER_ADVERTISE
+      connect_retries: 30
+    }
+
+    tls: {
+      cert_file: "/etc/nats-certs/server.pem"
+      key_file: "/etc/nats-certs/sslcert.key"
+    }
+
+    // Operator "op"
+    operator:
+
+    resolver: MEMORY
+
+    resolver_preload:

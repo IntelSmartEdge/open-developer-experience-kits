@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: validate that cpu_idle_driver is defined correctly
+  fail:
+    msg: >
+      "cpu idle driver accepts following options:
+      {{ acceptable_idle_driver_values| join(', ') }}. Provided: {{ cpu_idle_driver }}"
+  when:
+    - cpu_idle_driver not in acceptable_idle_driver_values
+
+- name: set idle driver kernel boot flags
+  set_fact:
+    idle_driver_flags: "idle={{ cpu_idle_driver }}"
+
+- name: prepare cpu idle driver grub commandline string
+  set_fact:
+    idle_driver_cmdline: 'GRUB_CMDLINE_LINUX="${GRUB_CMDLINE_LINUX} {{ idle_driver_flags }}" {{ idle_driver_marker }}'
+
+- name: set cpu idle driver flags in /etc/default/grub
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX="\${GRUB_CMDLINE_LINUX}(.*?)" {{ idle_driver_marker }}$'
+    line: '{{ idle_driver_cmdline }}'
+    state: present
+    mode: a=r,u+w,g+w
+  register: grub
+  become: yes

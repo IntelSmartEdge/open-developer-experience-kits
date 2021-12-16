@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: ensure that sriov settings are disabled when iommu_enabled is false
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=(.*?){{ sriov_marker }}$'
+    state: absent
+  register: grub
+  become: yes
+  when: not iommu_enabled
+
+- name: setup sriov grub commandline parameters
+  include_tasks: setup_sriov_kernel_flags.yml
+  when:
+    - iommu_enabled
+
+# noqa because include_role cannot be used in a handler
+- name: update grub  # noqa no-handler
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - grub.changed

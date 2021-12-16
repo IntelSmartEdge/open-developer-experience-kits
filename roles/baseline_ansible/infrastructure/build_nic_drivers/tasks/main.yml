@@ -40,7 +40,7 @@
         path: "{{ driver_dir }}"
         owner: "{{ project_user }}"
         group: "{{ project_group }}"
-        mode: 0755
+        mode: a=rx,u+w
 
     - name: download {{ driver_name }} driver
       get_url:
@@ -56,7 +56,7 @@
       modprobe:
         name: "{{ driver_name }}"
         state: absent
-      become: true
+      become: yes
       when: current_mgmt_driver != driver_name
 
     - name: untar {{ driver_name }} driver sources
@@ -65,15 +65,16 @@
         dest: "{{ driver_dir }}"
         list_files: true
         remote_src: true
-        mode: 0644
-      become: true
+        mode: a=r,u+w
+      become: yes
       register: untar_results
 
     - name: build and install {{ driver_name }} driver
-      make:
+      command:
+        cmd: "make -j {{ item }}"
         chdir: "{{ '/'.join([untar_results.dest, untar_results.files[0], 'src']) }}"
-        target: "{{ item }}"
-      become: true
+      changed_when: false
+      become: yes
       with_items:
         - clean
         - install
@@ -81,12 +82,12 @@
     - name: reboot if driver is used by management interface
       reboot:
         reboot_timeout: 1200  # wait up to 20 minutes
-      become: true
+      become: yes
       when: current_mgmt_driver == driver_name
-  when: installed_version.stdout != driver_version
+  when: (installed_version.stdout | default('')) != driver_version
 
 - name: ensure that {{ driver_name }} module is loaded
   modprobe:
     name: "{{ driver_name }}"
     state: present
-  become: true
+  become: yes

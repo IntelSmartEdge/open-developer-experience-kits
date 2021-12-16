@@ -3,6 +3,12 @@
 
 ---
 
+- name: check pip2 version
+  command: "pip2 --version"
+  register: pip_version
+  changed_when: false
+  ignore_errors: true
+
 - name: install pip2
   block:
     # - name: download get-pip.py #TODO
@@ -18,13 +24,21 @@
         dest: "{{ pip2_temp_dir.path }}"
     - name: install pip
       command: "python2 {{ pip2_temp_dir.path }}/get-pip.py"
-      become: true
+      become: yes
     - name: change pip version
       pip:
         name: pip==20.2.4
         extra_args: --force-reinstall
         state: present
         executable: pip2
+  when: >
+    pip_version.rc != 0 or
+    pip_version.stdout is not match('pip 20.2.4')
+
+- name: check if Docker repository exists
+  stat:
+    path: /etc/apt/sources.list.d/docker.list
+  register: docker_repo
 
 - name: add Docker repository and clean cache
   block:
@@ -36,22 +50,24 @@
       - "/usr/share/keyrings/docker-archive-keyring.gpg"
       - "/etc/apt/sources.list.d/docker.list"
       changed_when: true
-      become: true
+      become: yes
     - name: get docker repo gpg  # noqa command-instead-of-module
       shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+      args:
+        warn: false
       changed_when: true
-      become: true
+      become: yes
     - name: add docker repository
       shell: >
         echo
         "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu
         $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
       changed_when: true
-      become: true
+      become: yes
 
       # Using cmd to workaround the issue where cache isn't updated using package module
     - name: update repositories cache
-      command: apt update
-      changed_when: true
-      become: true
-  when: not offline_enable | default(False)
+      apt:
+        update_cache: yes
+      become: yes
+  when: docker_repo.stat.exists == false

@@ -187,7 +187,7 @@ def handle_cluster_inventory_dir(cluster_inventory_path, group_vars_path, host_v
     create_symlinks_for_inventory(DEFAULT_HOST_VARS_PATH, host_vars_path)
 
 
-def run_deployment(inventory, cleanup=False):
+def run_deployment(inventory):
     """Deploys Smart Edge with given settings, returns Popen object"""
     inventory_dir = os.path.join(ALT_INVENTORIES_PATH, inventory.cluster_name)
     inventory_location = inventory.dump_to_yaml(inventory_dir)
@@ -197,13 +197,10 @@ def run_deployment(inventory, cleanup=False):
 
     handle_deployment_type(inventory.deployment, group_vars_path)
 
-    if cleanup:
-        playbook = "dev_playbook.yml"
+    if inventory.is_single_node:
+        playbook = "single_node_network_edge.yml"
     else:
-        if inventory.is_single_node:
-            playbook = "single_node_network_edge.yml"
-        else:
-            playbook = "network_edge.yml"
+        playbook = "network_edge.yml"
 
     playbook = os.path.join(SCRIPT_PARENT_DIR, playbook)
 
@@ -363,8 +360,6 @@ def parse_arguments():
         description=script_description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-f", "--any-errors-fatal", dest="any_errors_fatal", action="store_true",
                         help="Terminate all running actions when any of them fail")
-    parser.add_argument("-c", "--clean", dest="clean", action="store_true",
-                        help="Run cleanup scripts on clusters")
     return parser.parse_args()
 
 
@@ -397,7 +392,7 @@ def main(args):
 
     prepare_alt_dir_layout()
     for inventory in inventory_handler.get_inventories:
-        deploy_wrapper = run_deployment(inventory, args.clean)
+        deploy_wrapper = run_deployment(inventory)
         deployment_wrappers.append(deploy_wrapper)
         time.sleep(DEPLOYMENT_INTERVAL)
 

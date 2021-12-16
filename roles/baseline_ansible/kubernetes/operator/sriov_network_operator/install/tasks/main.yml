@@ -50,12 +50,27 @@
       strip: 1
     changed_when: true
 
+  - name: Copy customized git patch for adding CPK device ID
+    template:
+      src: "{{ _sriov_network_operator.git_webhook_patch }}.j2"
+      dest: "{{ _sriov_network_operator.download_dir }}/{{ _sriov_network_operator.git_webhook_patch }}"
+      mode: preserve
+
+  - name: Apply git patch for SRIOV NO Webhook configmap
+    patch:
+      src: "{{ _sriov_network_operator.download_dir }}/{{ _sriov_network_operator.git_webhook_patch }}"
+      basedir: "{{ _sriov_network_operator.download_dir }}"
+      remote_src: true
+      strip: 1
+    changed_when: true
+
   - name: Install skopeo for SRIOV Network Operator deployment
-    include_tasks: skopeo_install.yml
+    include_role: 
+        name: infrastructure/install_skopeo
 
   - name: Install SR-IOV Network Operator
-    make:
-      target: "deploy-setup-k8s"
+    command:
+      cmd: make -j deploy-setup-k8s
       chdir: "{{ _sriov_network_operator.download_dir }}"
     environment:
       PATH: "{{ makefile_env_path_var }}"

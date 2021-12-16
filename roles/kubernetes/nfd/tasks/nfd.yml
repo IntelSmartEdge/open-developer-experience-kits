@@ -15,7 +15,6 @@
         name: "{{ _nfd_image_name }}"
         tag: "{{ _nfd_tag }}"
         source: pull
-      when: not (offline_enable | default(false))
       register: result
       retries: "{{ number_of_retries }}"
       until: result is succeeded
@@ -38,22 +37,16 @@
         state: absent
         name: "{{ _nfd_image_name }}"
         tag: "{{ _nfd_tag }}"
-      when: not (offline_enable | default(false))
 
     - name: create NFD chart template directory
       file:
         name: "{{ item }}"
         state: directory
-        mode: 0755
+        mode: a=rx,u+w
       with_items:
         - "{{ _nfd_chart_dir }}"
         - "{{ _nfd_chart_dir }}/templates"
       changed_when: true
-
-    - name: reset _nfd_chart_url for offline mode
-      set_fact:
-        _nfd_chart_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/nfd"
-      when: offline_enable | default(false)
 
     - name: download NFD chart
       get_url:
@@ -86,10 +79,22 @@
           command: kubectl create namespace {{ system_namespace }}
           when: get_system_ns.rc == 1
 
+    - name: create NFD network policy
+      template:
+        src: nfd-network-policy.yaml.j2
+        dest: "{{ _nfd_chart_dir }}/nfd-network-policy.yaml"
+        mode: preserve
+
+    - name: apply NFD network policy
+      command: kubectl apply -f "{{ _nfd_chart_dir }}/nfd-network-policy.yaml"
+      changed_when: true
+
     - name: deploy NFD with Helm chart
       command: >
         helm install {{ _nfd_release_name }} {{ _nfd_chart_dir }} \
         --set image.repository={{ _registry_ip_address }}:{{ _registry_port }}/intel/node-feature-discovery \
-        --set image.tag={{ _nfd_tag }} --set serviceAccount.name=nfd-master --namespace={{ system_namespace }}
+        --set image.tag={{ _nfd_tag }} --set serviceAccount.name=nfd-master \
+        --set master.extraLabelNs=sgx.intel.com \
+        --namespace={{ system_namespace }}
       changed_when: true
   when: get_release_nfd.rc != 0

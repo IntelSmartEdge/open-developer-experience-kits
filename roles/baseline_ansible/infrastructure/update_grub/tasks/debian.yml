@@ -6,7 +6,7 @@
 - name: update grub.cfg
   command: update-grub
   changed_when: true
-  become: true
+  become: yes
   when:
     - ansible_os_family == "Debian"
   notify:

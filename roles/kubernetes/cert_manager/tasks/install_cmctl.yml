@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+- name: Create temporary directory
+  tempfile:
+    state: directory
+  register: tempdir
+
+- name: Download cmctl binary
+  get_url:
+    url: "{{ _cmctl_url }}"
+    dest: "{{ tempdir.path }}/cmctl.tar.gz"
+    mode: u+rwx
+
+- name: extract the archive
+  unarchive:
+    src: "{{ tempdir.path }}/cmctl.tar.gz"
+    dest: "/bin"
+    mode: a=rx,u+w
+    remote_src: yes
+  become: yes
+
+- name: setup bash completion
+  shell:
+    cmd: cmctl completion bash > /etc/bash_completion.d/cmctl
+    creates: /etc/bash_completion.d/cmctl
+  become: yes
+
+- name: Remove dangling folder
+  file:
+    path: "{{ tempdir.path }}"
+    state: absent

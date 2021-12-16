@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Get installed skopeo version
+  command: "skopeo -v"
+  ignore_errors: true
+  register: skopeo_info
+  changed_when: false
+
+- name: Install scopeo if missing
+  block:
+  - name: Install required packages/skopeo
+    include_role:
+      name: infrastructure/install_dependencies
+
+  - name: download skopeo repo
+    git:
+      repo: "{{ skopeo_url }}"
+      dest: "{{ skopeo_download_dir }}"
+      clone: true
+      update: true
+      version: "{{ skopeo_commit }}"
+      force: true
+    register: result
+    retries: "{{ number_of_retries | default(10) }}"
+    until: result is succeeded
+    delay: "{{ retry_delay | default(5) }}"
+
+  - name: Build and install skopeo
+    command:
+      cmd: make -j install-binary
+      chdir: "{{ skopeo_download_dir }}"
+    changed_when: false
+    environment:
+      PATH: "{{ makefile_env_path_var }}"
+    become: yes
+  when: skopeo_info.rc != 0
+
+- name: Check if policy exists
+  stat:
+    path: "{{ skopeo_policy_dir }}/policy.json"
+  register: skopeo_policy_info
+
+- name: Create default policy
+  block:
+    - name: Create containers configuration directory
+      file:
+        path: "{{ skopeo_policy_dir }}"
+        state: directory
+        owner: "{{ project_user }}"
+        group: "{{ project_group }}"
+        mode: a=r,u+wx
+
+    - name: Download default policy
+      get_url:
+        url: "{{ skopeo_default_policy_url }}"
+        dest: "{{ skopeo_policy_dir }}/policy.json"
+      register: result
+      until: result is succeeded
+      retries: "{{ number_of_retries | default(5) }}"
+      delay: "{{ retry_delay | default(5) }}"
+  when: not skopeo_policy_info.stat.exists

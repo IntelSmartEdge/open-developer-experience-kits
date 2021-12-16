@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+# Ubuntu GRUB2 config file:
+grub2_config: "/boot/grub/grub.cfg"
+grub_settings: "/etc/default/grub"

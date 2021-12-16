@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+# Default values for aas-db-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+aasDB:
+  appName: aasdb
+  name: aas-db
+  nameSpace: isecl
+  port: 5432
+
+
+nfs:
+  server: <nfs-server-ip/nfs-server-hostname>
+  path: <nfs-client-mount-path>/isecl/aas/db
+
+replicaCount: 1
+
+image:
+  repository: postgres
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "11.7"
+
+podSecurityContext:
+  fsGroup: 1001
+
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+
+postgresConf:
+  sqlConf: |
+    listen_addresses = '*'
+    port = 5432
+    ssl = on
+    ssl_cert_file = '/etc/postgresql/secrets/server.crt'
+    ssl_key_file = '/etc/postgresql/secrets/server.key'
+    ssl_ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256'
+  hbaConf: |
+    local  all  all trust
+    hostssl aasdb aasdbuser 10.1.0.0/8 md5
+
+service:
+  type: ClusterIP
+  port: 5432
+

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+pccs_access_port: 32666
+
+_pccs_repo: https://github.com/intel/SGXDataCenterAttestationPrimitives.git
+_pccs_version: DCAP_1.12.1
+_pccs_image_name: pccs
+_pccs_image_tag: "{{ _pccs_version }}"
+
+_pccs_certificate_name: pccs-cert
+_pcss_certificate_secret_name: pccs-cert-secret
+
+_pcss_chart_dir: "{{ ne_helm_charts_default_dir }}/pccs"
+
+_pccs_namespace: pccs

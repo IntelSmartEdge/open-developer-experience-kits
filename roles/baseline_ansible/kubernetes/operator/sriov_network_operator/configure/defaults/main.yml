@@ -15,9 +15,6 @@ sriov_network_node_policies: []
 #    vendor: 8086 # Intel vendorId
 #    root_devices: ["<domain>:<bus>:<slot>.<func>"]
 
-# Namespaces to be created for SriovNetworks
-sriov_network_namespaces: []
-
 # SriovNetworks list
 sriov_networks: []
 ## example of minimum sriov network

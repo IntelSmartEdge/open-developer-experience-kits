@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.basename }}-config
+  namespace: {{ .Values.namespace }}
+data: 
+  {{- toYaml .Values.hvsConfiguration | nindent 2 }}

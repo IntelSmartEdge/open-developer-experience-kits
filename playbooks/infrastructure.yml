@@ -10,25 +10,43 @@
     - import_tasks: "{{ playbook_dir }}/../tasks/reboot_server.yml"
 
   roles:
-    - role: infrastructure/setup_offline
     - role: infrastructure/setup_baseline_ansible
     - role: infrastructure/build_noproxy
     - role: baseline_ansible/infrastructure/os_proxy
-    - role: infrastructure/os_setup
     - role: baseline_ansible/infrastructure/time_setup_ntp
       when: ntp_enable | default(False)
+    - role: infrastructure/os_setup
+    - role: infrastructure/check_redeployment
     - role: baseline_ansible/infrastructure/time_verify_ntp
       reference_host: "{{ groups['controller_group'][0] }}"
       when: "'edgenode_group' in group_names"
-    - role: infrastructure/grub
+    - role: baseline_ansible/infrastructure/install_rt_package
+      when: kernel_rt_enable | default(False)
+    - role: baseline_ansible/infrastructure/install_tuned_rt_profile
+      when: tuned_enable | default(False)     
+    - role: infrastructure/install_hwe_kernel
+    - role: baseline_ansible/infrastructure/configure_sriov_kernel_flags
+      when: "iommu_enabled | default(True)"
+    - role: baseline_ansible/infrastructure/configure_hugepages
+      when: "hugepages_enabled | default(False)"
+    - role: baseline_ansible/infrastructure/configure_cpu_idle_driver
+      when: "cpu_idle_driver_setup_enabled | default(False)"
+    - role: baseline_ansible/infrastructure/configure_cpu_isolation
+      when: "isolcpus_enabled | default(False)"
+    - role: baseline_ansible/infrastructure/configure_additional_grub_parameters
+      when: "additional_grub_parameters_enabled | default(False)"
 
     - role: infrastructure/conditional_reboot
     - role: infrastructure/e810_driver_update
       when: e810_driver_enable | default(False)
 
-    - role: infrastructure/git_repo
+    - role: infrastructure/provision_sgx_enabled_platform
+      when: sgx_enabled | default(False)
+
+    - role: infrastructure/git_repo_tool
+      when: "platform_attestation_controller | default(False) or platform_attestation_node | default(False)"
+
     - role: baseline_ansible/infrastructure/install_golang
-      offline_role: "{{ ( offline_enable | default(false) ) and ('controller_group' in group_names) }}"
       golang_additional_exports:
         - "export GOPRIVATE=github.com/smart-edge-open"
     - role: infrastructure/docker

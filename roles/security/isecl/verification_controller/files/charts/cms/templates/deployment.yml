@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.cms.name }}-deployment
+  namespace: {{ .Values.cms.nameSpace }}
+  labels:
+    env: test
+    app: {{ .Values.cms.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.cms.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.cms.name }}
+    spec:
+      containers:
+        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          name: {{ .Values.cms.name }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - containerPort: {{ .Values.cms.port }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.cms.name }}-config
+          volumeMounts:
+            - name: {{ .Values.cms.name }}-logs-volume
+              mountPath: /var/log/cms/
+            - name: {{ .Values.cms.name }}-config-volume
+              mountPath: /etc/cms/
+      volumes:
+        - name: {{ .Values.cms.name }}-logs-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.cms.name }}-logs-pvc
+        - name: {{ .Values.cms.name }}-config-volume
+          persistentVolumeClaim:
+            claimName: {{ .Values.cms.name }}-config-pvc

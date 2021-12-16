@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: create nfs mount point on client
+  file:
+    state: directory
+    path: "{{ nfs_client_share_dir }}"
+    owner: "{{ project_user }}"
+    group: "{{ project_group }}"
+    mode: a=rx,u+w
+  become: yes
+
+- name: mount nfs share on client
+  mount:
+    src: "{{ nfs_server }}:{{ nfs_server_dir }}"
+    path: "{{ nfs_client_share_dir }}"
+    state: mounted
+    fstype: nfs
+  become: yes

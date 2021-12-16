@@ -10,7 +10,7 @@ _grafana_dashboards_conf: "{{ project_dir }}/grafana/dashboards"
 _grafana_dashboards_prov: "{{ project_dir }}/grafana/provisioning/dashboards"
 
 _grafana_chart_dir: "{{ ne_helm_charts_default_dir }}/grafana"
-_grafana_chart_commit: "grafana-6.16.0"
+_grafana_chart_commit: "grafana-6.16.13"
 _grafana_chart_url: "https://raw.githubusercontent.com/grafana/helm-charts/{{ _grafana_chart_commit }}/charts/grafana/"
 
 _grafana_chart:
@@ -54,3 +54,6 @@ _grafana_timeout: 1800s
 
 _proxy_server_name: grafana
 _proxy_secret_name: grafana-tls
+_proxy_image: nginxinc/nginx-unprivileged
+_proxy_image_tag: 1.20-alpine
+_proxy_user_id: 101

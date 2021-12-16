@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2021 Intel Corporation
+
+---
+_sgx_release_version: release-0.22
+
+_git_repo_sgx_nfd: 
+  "https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/\
+  sgx_nfd?ref={{ _sgx_release_version }}"
+_git_repo_device_plugin_operator: 
+  "https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/operator/\
+  default?ref={{ _sgx_release_version }}"
+_git_repo_sgx_device_plugin: 
+  "https://raw.githubusercontent.com/intel/intel-device-plugins-for-kubernetes/main/deployments/\
+  operator/samples/deviceplugin_v1_sgxdeviceplugin.yaml"
+

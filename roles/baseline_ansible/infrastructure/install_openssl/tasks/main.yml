@@ -18,19 +18,14 @@
     include_role:
       name: infrastructure/install_dependencies
 
-  - name: update OpenSSL download url
-    set_fact:
-      openssl_download_url: "{{ offline_openssl_download_url }}/{{ openssl_package_name }}.tar.gz"
-    when: offline_role | default(False) and offline_openssl_download_url is defined
-
   - name: create OpenSSL directory
     file:
       path: "{{ openssl_project_dir }}"
       state: directory
       owner: "{{ project_user }}"
       group: "{{ project_group  }}"
-      mode: 0755
-    become: true
+      mode: a=rx,u+w
+    become: yes
 
   - name: "OpenSSL download from {{ openssl_download_url }}"
     get_url:
@@ -39,7 +34,7 @@
       checksum: "{{ openssl_checksum }}"
       owner: "{{ project_user }}"
       group: "{{ project_group }}"
-      mode: 0755
+      mode: a=rx,u+w
     register: openssl_download_result
     retries: "{{ number_of_retries  }}"
     until: openssl_download_result is succeeded
@@ -51,7 +46,7 @@
       dest: "{{ openssl_project_dir }}"
       owner: "{{ project_user }}"
       group: "{{ project_group }}"
-      mode: 0755
+      mode: a=rx,u+w
       remote_src: true
 
   - name: Set OpenSSL configure options
@@ -68,19 +63,25 @@
       chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
 
   - name: OpenSSL make
-    make:
+    command:
+      cmd: make -j
       chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
-      params:
-        NUM_THREADS: "{{ ansible_processor_vcpus }}"
+    changed_when: false
 
-  - name: OpenSSL make install
+  - name: OpenSSL install sw
     make:
       chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
-      target: install
-    become: true
+      target: install_sw
+    become: yes
+
+  - name: OpenSSL install ssl dirs
+    make:
+      chdir: "{{ openssl_project_dir }}/{{ openssl_package_name }}"
+      target: install_ssldirs
+    become: yes
 
   - name: OpenSSL system wide
-    become: true
+    become: yes
     block:
     - name: OpenSSL create ld config
       lineinfile:
@@ -88,7 +89,7 @@
         create: true
         dest: "/etc/ld.so.conf.d/localuser.conf"
         line: "{{ item }}"
-        mode: 0644
+        mode: a=r,u+w
       with_items:
         - "/usr/local/lib"
         - "/usr/local/lib64"
@@ -103,8 +104,8 @@
       create: true
       dest: "/etc/profile.d/openssl.sh"
       line: "PATH={{ openssl_custom_install_path }}bin/:$PATH"
-      mode: 0644
-    become: true
+      mode: a=r,u+w
+    become: yes
     when: ansible_distribution == "RedHat"
 
   - name: Setup certificates

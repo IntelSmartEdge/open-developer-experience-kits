@@ -2,13 +2,10 @@
 # Copyright (c) 2020 Intel Corporation
 
 ---
-- name: wait until primary CNI is up on the node
-  shell: set -o pipefail && ls /etc/cni/net.d | grep -P '01-|10-|00-(?!multus)'
-  register: result
-  until: not result.failed
-  retries: 30
-  delay: 10
+- name: Wait for kube-system pods to be running
+  command: kubectl wait --for=condition=Ready pod --namespace=kube-system --all --timeout=200s
   changed_when: false
+  delegate_to: "{{ groups['controller_group'][0] }}"
 
 - name: get name of Multus pod on the worker
   shell: >
@@ -16,9 +13,6 @@
     kubectl get pods --field-selector status.phase=Running -n kube-system
     --field-selector spec.nodeName={{ node_name }} | awk '/kube-multus-ds-amd64/ {print $1;}'
   register: nodes_multus_pod
-  retries: 30
-  delay: 10
-  until: nodes_multus_pod.stdout
   changed_when: false
   delegate_to: "{{ groups['controller_group'][0] }}"
 
@@ -28,8 +22,8 @@
   changed_when: true
   register: rename_cnis_cmd
   failed_when:
-    - rename_cnis_cmd.rc != 0 and rename_cnis_cmd.rc != 4  # 4 - nothing was renamed
-  become: true
+    - rename_cnis_cmd.rc != 0 and rename_cnis_cmd.rc != 4 # 4 - nothing was renamed
+  become: yes
 
 - name: delete Multus pod to recreate 00-multus.conf
   command: kubectl delete pod -n kube-system {{ nodes_multus_pod.stdout }}

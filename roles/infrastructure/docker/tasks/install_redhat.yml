@@ -3,23 +3,21 @@
 
 ---
 
-- name: add Docker repository and clean cache
-  block:
-    - name: add Docker repository
-      yum_repository:
-        name: docker
-        description: Docker CE repository
-        baseurl: "{{ _docker_repository_url }}"
-        gpgkey: "{{ _docker_repository_key }}"
-        gpgcheck: true
-      become: true
-      register: result
-      retries: "{{ number_of_retries }}"
-      until: result is succeeded
-      delay: "{{ retry_delay }}"
-    - name: clear yum cache
-      command: yum clean all
-      args:
-        warn: false
-      changed_when: true
-  when: not offline_enable | default(False)
+- name: add Docker repository
+  yum_repository:
+    name: docker
+    description: Docker CE repository
+    baseurl: "{{ _docker_repository_url }}"
+    gpgkey: "{{ _docker_repository_key }}"
+    gpgcheck: true
+  become: yes
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+
+- name: clear yum cache
+  command: yum clean all
+  args:
+    warn: false
+  changed_when: true

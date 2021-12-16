@@ -2,19 +2,25 @@
 # Copyright (c) 2020-2021 Intel Corporation
 
 ---
-- name: include certs variables
-  include_vars: ../../certs/defaults/main.yml
-
-- name: certificates for Grafana
-  include_tasks: ../../certs/tasks/create_certificates.yml
+- name: create certificates for grafana
+  include_role:
+    name: kubernetes/certs
   vars:
     tls_secret_name: "{{ _proxy_secret_name }}"
-    proxy_name: "{{ _proxy_server_name }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: ['grafana']
+
+- name: wait until grafana secret is ready
+  command: kubectl get secret/{{ _proxy_secret_name }} -n {{ telemetry_namespace }}
+  retries: 10
+  register: query
+  changed_when: false
+  until: query.rc == 0
 
 - name: store certs in variables for later use
   block:
     - name: store root CA cert
-      shell: set -o pipefail && kubectl get secrets/root-ca -n telemetry -o json | jq -r '.data."root.pem"' | base64 -d
+      shell: set -o pipefail && kubectl get secrets/{{ _proxy_secret_name }} -n telemetry -o json | jq -r '.data."ca.crt"' | base64 -d
       register: telemetry_root_ca_cert
     - name: store grafana cert
       shell: set -o pipefail && kubectl get secrets/{{ _proxy_secret_name }} -n telemetry -o json | jq -r '.data."tls.crt"' | base64 -d
@@ -30,7 +36,7 @@
     fw_open_ports: "{{ grafana_open_ports }}"
 
 - name: check if Grafana release already exists
-  command: helm status grafana -n telemetry
+  command: helm status grafana -n {{ telemetry_namespace }}
   failed_when: false
   register: get_release_grafana
   changed_when: false
@@ -48,7 +54,7 @@
         path: "{{ tmp_dir.path }}"
         owner: "{{ ansible_user }}"
         group: "{{ project_group }}"
-      become: true
+      become: yes
 
     - name: template values.yml to tmp directory
       template:
@@ -57,18 +63,17 @@
         mode: preserve
         owner: "{{ ansible_user }}"
         group: "{{ project_group }}"
-      become: true
+      become: yes
 
     - name: add default Helm repository
       command: helm repo add stable https://charts.helm.sh/stable
       changed_when: true
-      when: not (offline_enable | default(false))
 
     - name: create Grafana chart template directory
       file:
         name: "{{ item }}"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       with_items:
         - "{{ _grafana_chart_dir }}/templates"
         - "{{ _grafana_chart_dir }}/templates/test"
@@ -84,13 +89,8 @@
       file:
         name: "{{ _grafana_chart_dir }}/files"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       changed_when: true
-
-    - name: reset _grafana_chart_url under offline mode
-      set_fact:
-        _grafana_chart_url: "https://{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}/grafana"
-      when: offline_enable | default(false)
 
     - name: download Grafana chart
       get_url:
@@ -126,7 +126,7 @@
       file:
         path: "{{ _pv_dir }}/{{ item }}"
         state: directory
-        mode: 0777
+        mode: a=rx,u+w
       with_items: "{{ _pv_names }}"
       become: yes
 
@@ -139,7 +139,7 @@
       changed_when: true
 
     - name: apply definitions of persistent volumes
-      command: kubectl apply -n telemetry -f "{{ tmp_dir.path }}/{{ item }}.yml"
+      command: kubectl apply -n {{ telemetry_namespace }} -f "{{ tmp_dir.path }}/{{ item }}.yml"
       with_items: "{{ _pv_names }}"
       changed_when: true
 
@@ -158,7 +158,7 @@
       file:
         path: "{{ item }}"
         state: directory
-        mode: "0755"
+        mode: a=rx,u+w
       loop:
         - "{{ _grafana_dashboards_prov }}"
         - "{{ _grafana_dashboards_conf }}"
@@ -179,7 +179,7 @@
       package:
         name: patch
         state: present
-      become: true
+      become: yes
 
     - name: apply _pod.tpl patch
       patch:
@@ -203,37 +203,42 @@
       changed_when: true
 
     - name: install Grafana release
-      command: "helm install grafana --namespace telemetry -f {{ tmp_dir.path }}/values.yml {{ _grafana_chart_dir }} --timeout {{ _grafana_timeout }}"
+      command: >
+        helm install grafana --namespace {{ telemetry_namespace }} \
+        -f {{ tmp_dir.path }}/values.yml {{ _grafana_chart_dir }} \
+        --timeout {{ _grafana_timeout }} \
+        --wait
       changed_when: true
 
     - name: wait for Grafana
       block:
         - name: wait for Grafana pod to be ready
           command: >
-            kubectl wait --selector=app.kubernetes.io/instance=grafana --namespace=telemetry
+            kubectl wait --selector=app.kubernetes.io/instance=grafana --namespace={{ telemetry_namespace }}
             --for=condition=Ready pods --timeout={{ _grafana_timeout }}
           changed_when: false
       rescue:
         - name: get grafana pod name
-          command: kubectl get pod --selector=app.kubernetes.io/instance=grafana --namespace=telemetry --output=name
+          command: kubectl get pod --selector=app.kubernetes.io/instance=grafana --namespace={{ telemetry_namespace }} --output=name
           register: grafana_pod_name
           changed_when: false
         - name: get grafana pod summary
-          command: kubectl get --namespace=telemetry {{ grafana_pod_name.stdout }}
+          command: kubectl get --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }}
           changed_when: false
           failed_when: false
         - name: describe grafana pod
-          command: kubectl describe --namespace=telemetry {{ grafana_pod_name.stdout }}
+          command: kubectl describe --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }}
           changed_when: false
           failed_when: false
         - name: get containers in grafana pod
-          command: kubectl get --namespace=telemetry {{ grafana_pod_name.stdout }} -o jsonpath='{.spec.initContainers[*].name}{" "}{.spec.containers[*].name}'
+          command: kubectl get --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }} -o jsonpath='{.spec.initContainers[*].name}{" "}{.spec.containers[*].name}'
           changed_when: false
           failed_when: false
           register: grafana_pod_containers
         - name: get grafana containers' logs
-          command: kubectl logs --namespace=telemetry {{ grafana_pod_name.stdout }} {{ item }}
+          command: kubectl logs --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }} {{ item }}
           changed_when: false
+          failed_when: false
           with_items: "{{ grafana_pod_containers.stdout.split(' ') }}"
         - name: end the playbook
           fail:

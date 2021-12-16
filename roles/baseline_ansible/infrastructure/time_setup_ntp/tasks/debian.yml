@@ -9,7 +9,7 @@
         dest: /etc/systemd/timesyncd.conf
         regexp: "^NTP=*"
         state: absent
-      become: true
+      become: yes
 
     - name: prepare values
       set_fact:
@@ -20,7 +20,7 @@
         path: /etc/systemd/timesyncd.conf
         block: |
           {{ ntp_servers_prepared }}
-      become: true
+      become: yes
 
     - name: restart systemd-timesyncd
       systemd:
@@ -29,11 +29,11 @@
         masked: false
         state: restarted
         daemon_reload: true
-      become: true
+      become: yes
 
     - name: create ntp time set flag
       file:
         path: "{{ ntp_time_set }}"
         state: touch
-        mode: 0644
+        mode: a=r,u+w
   when: (ntp_servers | length) > 0

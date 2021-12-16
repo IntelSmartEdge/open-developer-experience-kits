@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: remove hugepages settings when setting is disabled
+  lineinfile:
+    dest: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=(.*?){{ hugepages_marker }}$'
+    state: absent
+  register: grub
+  become: yes
+  when: not hugepages_enabled
+
+- name: setup hugepages
+  include_tasks: setup_hugepages.yml
+  when:
+    - hugepages_enabled
+
+# noqa because include_role cannot be used in a handler
+- name: update grub  # noqa no-handler
+  include_role:
+    name: infrastructure/update_grub
+  when:
+    - grub.changed
