@@ -11,6 +11,6 @@ _git_repo_device_plugin_operator:
   "https://github.com/intel/intel-device-plugins-for-kubernetes/deployments/operator/\
   default?ref={{ _sgx_release_version }}"
 _git_repo_sgx_device_plugin: 
-  "https://raw.githubusercontent.com/intel/intel-device-plugins-for-kubernetes/main/deployments/\
-  operator/samples/deviceplugin_v1_sgxdeviceplugin.yaml"
+  "https://raw.githubusercontent.com/intel/intel-device-plugins-for-kubernetes/\
+  {{ _sgx_release_version }}/deployments/operator/samples/deviceplugin_v1_sgxdeviceplugin.yaml"
 
