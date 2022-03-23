@@ -2,7 +2,7 @@
 # Copyright (c) 2021 Intel Corporation
 ---
 isecl_repo: "https://github.com/intel-secl/build-manifest.git"
-isecl_repo_tag: "refs/tags/v4.1.0-Beta"
+isecl_repo_tag: "refs/tags/v4.1.1"
 isecl_repo_manifest: "manifest/data-sovereignty.xml"
 
 isecl_build_dir: "{{ project_dir }}/intel-secl"

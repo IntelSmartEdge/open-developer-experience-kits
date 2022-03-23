@@ -14,7 +14,7 @@ appName: isecl-controller
 image:
   repository: isecl/k8s-controller
   pullPolicy: IfNotPresent
-  tag: "v4.1.0"
+  tag: "v4.1.1"
 
 initContainer:
   name: chmod-pg-data

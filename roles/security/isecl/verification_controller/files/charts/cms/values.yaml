@@ -21,7 +21,7 @@ image:
   repository: isecl/cms
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v4.1.0"
+  tag: "v4.1.1"
 
 podSecurityContext:
   fsGroup: 1001

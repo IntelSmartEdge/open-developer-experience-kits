@@ -15,3 +15,4 @@ apiServer:
 {% if pwek_enable is defined and pwek_enable %}
     service-node-port-range: "20000-39999"
 {% endif %}
+    feature-gates: "DownwardAPIHugePages=True"

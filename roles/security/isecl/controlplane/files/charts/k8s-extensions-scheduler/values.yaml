@@ -13,7 +13,7 @@ appName: isecl-scheduler
 image:
   repository: isecl/k8s-scheduler
   pullPolicy: IfNotPresent
-  tag: v4.1.0
+  tag: v4.1.1
 
 volume:
   path: /var/log/isecl-k8s-extensions
