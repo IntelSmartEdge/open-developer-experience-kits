@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+- name: create certificates for Prometheus server
+  include_role:
+    name: kubernetes/certs
+  vars:
+    tls_secret_name: "{{ telemetry_prometheus_tls_secret_name }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: "{{ _prometheus_tls_names }}"
+
+- name: pull helm charts
+  command:
+    argv:
+      - helm
+      - pull
+      - --repo
+      - "{{ _prometheus_helm_repo.url }}"
+      - --version
+      - "{{ _prometheus_helm_repo.version }}"
+      - "{{ _prometheus_helm_repo.name }}"
+      - --untar
+      - --untardir
+      - "{{ ne_helm_charts_default_dir }}"
+    creates: "{{ _prometheus_charts_dir }}"
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+
+- name: create directories for persistent volumes
+  file:
+    path: "{{ _pv_dir }}/{{ _pv_name }}"
+    state: directory
+    mode: a=rxw,u+w
+  become: yes
+
+- name: template files to helm chart directory
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ _prometheus_charts_dir }}/{{ item.dest }}"
+    mode: preserve
+    trim_blocks: yes
+    lstrip_blocks: yes
+    force: true
+  loop:
+    - {src: values.yml.j2, dest: overwrite_values.yaml}
+    - {src: volumes.yml.j2, dest: templates/prometheus-operator/promPV.yaml}
+
+- name: pull helm charts
+  command:
+    argv:
+      - helm
+      - install
+      - -f
+      - "{{ _prometheus_charts_dir }}/overwrite_values.yaml"
+      - --namespace
+      - "{{ telemetry_namespace }}"
+      - "{{ _prometheus_release_name }}"
+      - "{{ _prometheus_charts_dir }}"
+  changed_when: true

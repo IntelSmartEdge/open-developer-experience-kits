@@ -1,0 +1,81 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+---
+- name: create certificates for telegraf
+  include_role:
+    name: kubernetes/certs
+  vars:
+    tls_secret_name: "{{ _cert_secret_name }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: ["{{ _cert_server_name }}"]
+
+- name: create temporary directory
+  tempfile:
+    state: directory
+    suffix: telegraf
+  register: tmp_dir
+
+- name: clone repo
+  git:
+    repo: "{{ _observability_telegraf_git_url }}"
+    dest: "{{ tmp_dir.path }}"
+    version: "{{ _observability_telegraf_version }}"
+
+- name: overwrite Dockerfile files
+  copy:
+    src: Dockerfile
+    dest: "{{ tmp_dir.path }}/images/telegraf/Dockerfile"
+    mode: u+rw
+    force: yes
+
+- name: Change permissions on cloned files
+  file:
+    path: "{{ tmp_dir.path }}"
+    mode: a+rx,u+w
+    recurse: yes
+    state: directory
+
+- name: build container
+  docker_image:
+    name: "{{ _image_repo_path }}"
+    source: build
+    state: present
+    tag: "{{ _image_tag }}"
+    build:
+      dockerfile: images/telegraf/Dockerfile
+      pull: yes
+      args:
+        TELEGRAF_TAG: "{{ _telegraf_tag }}"
+      path: "{{ tmp_dir.path }}"
+    push: yes
+
+- name: create destination directory
+  file:
+    state: directory
+    path: "{{ ne_helm_charts_default_dir }}/telegraf"
+    mode: a=rx,u+w
+
+- name: copy Helm chart to the master node
+  copy:
+    src: "{{ role_path }}/charts/"
+    dest: "{{ ne_helm_charts_default_dir }}/telegraf/"
+    mode: preserve
+
+- name: template values.yml file into Chart directory
+  template:
+    src: values.yml.j2
+    dest: "{{ ne_helm_charts_default_dir }}/telegraf/values.yml"
+    mode: preserve
+
+- name: install telegraf using Helm
+  command:
+    argv:
+      - helm
+      - install
+      - telegraf
+      - --namespace
+      - "{{ telemetry_namespace }}"
+      - -f
+      - "{{ ne_helm_charts_default_dir }}/telegraf/values.yml"
+      - "{{ ne_helm_charts_default_dir }}/telegraf"
+  changed_when: true

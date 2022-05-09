@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+- name: create namespace for SRIOV-FEC Operator
+  include_role:
+    name: kubernetes/custom_namespace
+  vars:
+    - _custom_ns: [ "{{ sriov_fec_operator_namespace }}" ]
+
+- name: prepare SRIOV-FEC Operator deployment script
+  template:
+    src: sriov_operator_deploy.j2
+    dest: "{{ _git_repo_dest_sriov.path }}/deploy.yaml"
+    mode: a=rw
+  changed_when: true
+
+- name: deploy SRIOV-FEC Operator
+  command: kubectl apply -f {{ _git_repo_dest_sriov.path }}/deploy.yaml
+  changed_when: false
+
+- name: check if SRIOV-FEC Operator pods started
+  block:
+  - name: wait for the operator pods to startup
+    command: kubectl wait --namespace={{ sriov_fec_operator_namespace }} --for=condition=Ready -l control-plane=controller-manager pod
+    register: result
+    retries: 20
+    until: result is succeeded
+    delay: 5
+  rescue:
+  - name: try recovery
+    include_tasks: sriov_fec_startup_recovery.yml

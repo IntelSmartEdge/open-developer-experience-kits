@@ -6,7 +6,7 @@
   file:
     path: "{{ item }}"
     state: absent
-  with_items:
+  loop:
   - "{{ project_dir }}"
   - "{{ _persistent_volumes_dest }}"
   become: yes

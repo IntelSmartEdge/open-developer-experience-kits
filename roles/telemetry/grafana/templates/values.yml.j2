@@ -1,0 +1,148 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+nodeSelector: {"node-role.kubernetes.io/master": ""}
+
+
+tolerations:
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
+image:
+  repository: grafana/grafana
+  tag: '8.4.2'
+
+service:
+  type: NodePort
+  nodePort: 32000
+  targetPort: 3200
+  annotations: {}
+  labels: {}
+  portName: service
+
+persistence:
+  type: pvc
+  enabled: true
+  storageClassName: grafana
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+  finalizers:
+    - kubernetes.io/pvc-protection
+
+pv:
+  name: "{{ _pv_name }}"
+  dir: "{{ _pv_dir }}"
+
+adminUser: admin
+
+sidecar:
+  image:
+    tag: "1.14.1"
+  dashboards:
+    enabled: true
+    label: grafana_dashboard
+    searchNamespace: true
+  datasources:
+    enabled: true
+    label: grafana_datasource
+    searchNamespace: null
+
+extraContainers: |
+  - name: proxy
+    image: "{{ _proxy_image }}:{{ _proxy_image_tag }}"
+    volumeMounts:
+    - name: proxy-config
+      mountPath: /etc/nginx/nginx.conf
+      subPath: nginx.conf
+    - name: certs
+      mountPath: /opt/grafana/certs
+    ports:
+    - name: proxy-web
+      containerPort: 3200
+    securityContext:
+      runAsUser: {{ _proxy_user_id }}
+
+extraContainerVolumes:
+  - name: certs
+    secret:
+      secretName: "{{ _proxy_secret_name }}"
+  - name: proxy-config
+    configMap:
+      name: grafana-configmap
+proxy:
+  apiPort: 3200
+  serverName: "{{ _proxy_server_name }}"
+  secretName: "{{ _proxy_secret_name }}"
+  internalPort: 3000
+  configMap: grafana-configmap
+  certsDest: /opt/grafana/certs
+  protocols: TLSv1.2 TLSv1.3
+  ciphers:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-ECDSA-AES256-GCM-SHA384"
+
+serviceMonitor:
+  enabled: true
+  path: /metrics
+  labels: {}
+  scheme: https
+  tlsConfig:
+    ca:
+      secret:
+        key: ca.crt
+        name: "{{ telemetry_prometheus_tls_secret_name }}"
+        optional: false
+    cert:
+      secret:
+        key: tls.crt
+        name: "{{ telemetry_prometheus_tls_secret_name }}"
+        optional: false
+    keySecret:
+      key: tls.key
+      name: "{{ telemetry_prometheus_tls_secret_name }}"
+      optional: false
+    insecureSkipVerify: true
+  relabelings: []
+
+datasources:
+  prometheus-tls.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus-TLS
+        access: proxy
+        editable: true
+        orgId: 1
+        type: prometheus
+        url: https://prometheus-prometheus:9090
+        withCredentials: true
+        isDefault: true
+        jsonData:
+          tlsAuth: true
+          tlsAuthWithCACert: true
+        secureJsonData:
+          tlsCACert: |
+              {{ telemetry_root_ca_cert.stdout | indent(width=14, first=False) }}
+          tlsClientCert: |
+              {{ telemetry_grafana_cert.stdout | indent(width=14, first=False) }}
+          tlsClientKey: |
+              {{ telemetry_grafana_key.stdout | indent(width=14, first=False) }}
+        version: 1
+
+dashboardProviders:
+ dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        disableDeletion: true
+        updateIntervalSeconds: 60
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+dashboardsConfigMaps:
+  default: example-dashboard

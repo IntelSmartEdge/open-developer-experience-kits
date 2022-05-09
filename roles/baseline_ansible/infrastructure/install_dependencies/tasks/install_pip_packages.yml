@@ -2,12 +2,29 @@
 # Copyright (c) 2021 Intel Corporation
 
 ---
+
+- name: Build full python packages list
+  set_fact:
+    install_python_dependencies_full_list:
+      "{{
+        install_python_dependencies[ansible_os_family] | default([]) | select('string') | list +
+        install_python_dependencies | json_query(distribution_query) | default([]) +
+        install_python_dependencies | json_query(distribution_major_version_query) | default([]) +
+        install_python_dependencies | json_query(distribution_version_query) | default([])
+      }}"
+  vars:
+    distribution_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}[][]"
+    distribution_major_version_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}_{{ ansible_distribution_major_version }}[][]"
+    distribution_version_query: "{{ ansible_os_family }}[*].{{ ansible_distribution }}_{{ ansible_distribution_version | replace('.','_') }}[][]"
+
 - name: install python packages
   pip:
-    name: "{{ install_python_dependencies }}"
+    name: "{{ install_python_dependencies_full_list }}"
     state: present
-    extra_args: --ignore-installed
+    extra_args: --ignore-installed --user
   register: pip_result
   retries: "{{ number_of_retries | default(3) }}"
   until: pip_result is succeeded
   delay: " {{ retry_delay | default(3) }}"
+  when:
+    - install_python_dependencies_full_list | length>0

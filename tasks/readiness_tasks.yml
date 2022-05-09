@@ -2,7 +2,6 @@
 # Copyright (c) 2021 Intel Corporation
 
 ---
-
 - name: check if single node deployment
   set_fact:
     singlenode: "{{ groups['edgenode_group'] | length == 1
@@ -15,66 +14,127 @@
   tags: always
 
 - block:
-  - name: kubernetes/install
-    include_tasks: ../roles/kubernetes/install/tasks/readiness.yml
-  - name: kubernetes/controlplane
-    include_tasks: ../roles/kubernetes/controlplane/tasks/readiness.yml
-    when: "'controller_group' in group_names"
-  - name: kubernetes/node
-    include_tasks: ../roles/kubernetes/node/tasks/readiness.yml
-    when: "'edgenode_group' in group_names"
-  tags: kubernetes  # when tags are applied to the block, the apply is not needed
+    - name: kernel
+      include_tasks: ../roles/infrastructure/custom_kernel/tasks/readiness.yml
+  tags: kernel
+  when: not (skip_kernel | default(True))
 
 - block:
-  - name: harbor_registry/controlplane
-    include_tasks: ../roles/kubernetes/harbor_registry/controlplane/tasks/readiness.yml
-    when: "'controller_group' in group_names"
+    - name: kubernetes/install
+      include_tasks: ../roles/kubernetes/install/tasks/readiness.yml
+    - name: kubernetes/controlplane
+      include_tasks: ../roles/kubernetes/controlplane/tasks/readiness.yml
+      when: "'controller_group' in group_names"
+    - name: kubernetes/node
+      include_tasks: ../roles/kubernetes/node/tasks/readiness.yml
+      when: "'edgenode_group' in group_names"
+  tags: kubernetes # when tags are applied to the block, the apply is not needed
+
+- block:
+    - name: harbor_registry/controlplane
+      include_tasks: ../roles/kubernetes/harbor_registry/controlplane/tasks/readiness.yml
+      when: "'controller_group' in group_names"
   tags: harbor
 
 - block:
-  - name: calico
-    include_tasks: ../roles/kubernetes/cni/calico/controlplane/tasks/readiness.yml
-    when:
-      - "'controller_group' in group_names"
-      - "'calico' in kubernetes_cnis"
+    - name: calico
+      include_tasks: ../roles/kubernetes/cni/calico/controlplane/tasks/readiness.yml
+      when:
+        - "'controller_group' in group_names"
+        - "'calico' in kubernetes_cnis"
   tags: cni, calico
 
 - block:
-  - name: multus/controlplane
-    include_tasks: ../roles/kubernetes/cni/multus/controlplane/tasks/readiness.yml
-    when:
-      - "'controller_group' in group_names"
-      - "kubernetes_cnis|length > 1"
-  - name: multus/node
-    include_tasks: ../roles/kubernetes/cni/multus/node/tasks/readiness.yml
-    when:
-      - "'edgenode_group' in group_names"
-      - "kubernetes_cnis|length > 1"
+    - name: multus/controlplane
+      include_tasks: ../roles/kubernetes/cni/multus/controlplane/tasks/readiness.yml
+      when:
+        - "'controller_group' in group_names"
+        - "kubernetes_cnis|length > 1"
+    - name: multus/node
+      include_tasks: ../roles/kubernetes/cni/multus/node/tasks/readiness.yml
+      when:
+        - "'edgenode_group' in group_names"
+        - "kubernetes_cnis|length > 1"
   tags: cni, multus
 
 - block:
-  - name: nfd
-    include_tasks: ../roles/kubernetes/nfd/tasks/readiness.yml
+    - name: nfd
+      include_tasks: ../roles/kubernetes/nfd/tasks/readiness.yml
   tags: nfd
   when:
     - "'controller_group' in group_names"
     - ne_nfd_enable | default(True)
 
 - block:
-  - name: cadvisor controlplane
-    include_tasks: ../roles/telemetry/cadvisor/tasks/readiness.yml
-    when:
-      - "'controller_group' in group_names"
-      - telemetry_cadvisor_enable | default(True)
-  - name: collectd controlplane
-    include_tasks: ../roles/telemetry/collectd/controlplane/tasks/readiness.yml
-    when:
-      - "'controller_group' in group_names"
-      - telemetry_collectd_enable | default(True)
-  - name: prometheus
-    include_tasks: ../roles/telemetry/prometheus/tasks/readiness.yml
-    when:
-      - "'controller_group' in group_names"
-      - telemetry_prometheus_enable | default(True)
-      
+    - name: cadvisor controlplane
+      include_tasks: ../roles/telemetry/cadvisor/tasks/readiness.yml
+      when:
+        - telemetry_cadvisor_enable | default(True)
+    - name: telegraf
+      include_tasks: ../roles/telemetry/telegraf/tasks/readiness.yml
+      when:
+        - telemetry_telegraf_enable | default(True)
+    - name: grafana
+      include_tasks: ../roles/telemetry/grafana/tasks/readiness.yml
+      when:
+        - telemetry_grafana_enable | default(True)
+    - name: prometheus
+      include_tasks: ../roles/telemetry/prometheus/tasks/readiness.yml
+    - name: node-exporter
+      include_tasks: ../roles/telemetry/node_exporter/tasks/readiness.yml
   tags: telemetry
+  when:
+    - telemetry_enabled | default(True)
+    - "'controller_group' in group_names"
+
+- block:
+    - name: istio
+      include_tasks: ../roles/kubernetes/istio/tasks/readiness.yml
+  tags: istio
+  when:
+    - "'controller_group' in group_names"
+    - ne_istio_enable | default(False)
+
+- block:
+  - name: rook-ceph readiness check
+    include_tasks: ../roles/kubernetes/rook_ceph/tasks/readiness.yml
+    when:
+      - "'controller_group' in group_names"
+      - rook_ceph_enabled | default(False)
+  tags: rook_ceph
+
+- block:
+  - name: kubevirt readiness check
+    include_tasks: ../roles/kubernetes/kubevirt/tasks/readiness.yml
+    when:
+      - "'controller_group' in group_names"
+      - kubevirt_enable | default(False)
+  tags: kubevirt
+
+- block:
+  - name: pccs
+    include_tasks: ../roles/security/pccs/tasks/readiness.yml
+    when:
+      - pccs_enable | default(False)
+  tags: pccs
+
+- block:
+  - name: sgx_device_plugin
+    include_tasks: ../roles/kubernetes/sgx_device_plugin/tasks/readiness.yml
+    when:
+      - sgx_enabled | default(False)
+  tags: sgx_device_plugin
+
+- block:
+  - name: ISecL verification controller
+    include_tasks:  ../roles/security/isecl/verification_controller/tasks/readiness.yml
+  when:
+    - platform_attestation_controller | default(False)
+  tags: isecl_verification_controller
+
+- block:
+  - name: ISecL edge node services
+    include_tasks:  ../roles/security/isecl/controlplane/tasks/readiness.yml
+  when:
+    - platform_attestation_node | default(True)
+  tags: isecl_edge_services

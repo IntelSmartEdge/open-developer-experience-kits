@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+# Recovery for sriov-fec operator pods not starting
+- name: undeploy operator
+  command: kubectl delete -f {{ _git_repo_dest_sriov.path }}/deploy.yaml
+  changed_when: false
+
+- name: uninstall olm
+  command: operator-sdk olm uninstall
+  changed_when: true
+
+- name: install olm
+  command: operator-sdk olm install
+  changed_when: true
+
+- name: check if catalogsource exists
+  shell: set -o pipefail && kubectl get catalogsource -n olm operatorhubio-catalog | wc -l
+  failed_when: false
+  register: catalog_source
+  changed_when: false
+
+- name: delete unused catalogsource
+  command: kubectl delete catalogsource operatorhubio-catalog -n olm
+  changed_when: false
+  when: catalog_source.stdout | int != 0
+
+- name: deploy operator
+  command: kubectl apply -f {{ _git_repo_dest_sriov.path }}/deploy.yaml
+  changed_when: false
+
+- name: wait again for the intel-operator pod to start up
+  command: kubectl wait --namespace={{ sriov_fec_operator_namespace }} --for=condition=Ready  -l olm.catalogSource=intel-operators  pod
+  register: result
+  retries: 20
+  until: result is succeeded
+  delay: 5
+  changed_when: false
+
+- name: restart catalog-source pod
+  command: kubectl delete pod -n olm -l app=catalog-operator
+  changed_when: false
+
+- name: wait again for the operator pods to start up
+  command: kubectl wait --namespace={{ sriov_fec_operator_namespace }} --for=condition=Ready  -l app=sriov-fec-daemonset pod
+  register: result
+  retries: 30
+  until: result is succeeded
+  delay: 5
+  changed_when: false

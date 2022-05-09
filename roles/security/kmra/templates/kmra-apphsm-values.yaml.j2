@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+{% if "http_proxy" in proxy_env %}
+http_proxy: "{{ proxy_env.http_proxy }}"
+{% endif %}
+{% if "https_proxy" in proxy_env %}
+https_proxy: "{{ proxy_env.https_proxy }}"
+{% endif %}
+{% if "no_proxy" in proxy_env %}
+no_proxy: "{{ proxy_env.no_proxy | quote }}"
+{% endif %}
+
+apphsm:
+  main:
+    image:
+      repo: "{{ kmra_apphsm_image_repo }}"
+      name: "{{ kmra_apphsm_image_name }}"
+      tag: "{{ kmra_apphsm_image_tag }}"
+      pullPolicy: IfNotPresent
+    port: "{{ kmra_apphsm_upstream_port }}"
+  rproxy:
+    image:
+      repo: "{{ kmra_apphsm_rproxy_image_repo }}"
+      name: "{{ kmra_apphsm_rproxy_image_name }}"
+      tag: "{{ kmra_apphsm_rproxy_tag}}"
+      pullPolicy: "IfNotPresent"
+    port: "{{ kmra_apphsm_service_port }}"
+  init:
+    image:
+      repo: "{{ kmra_apphsm_init_image_repo }}"
+      name: "{{ kmra_apphsm_init_image_name }}"
+      tag: "{{ kmra_apphsm_init_image_tag }}"
+      pullPolicy: "IfNotPresent"
+  pccs_port: "{{ kmra_pccs_service_port }}"
+  pccs_hostname: "{{ sgx_pccs_ip }}"
+  sgx_prv_gid: 1002
+  use_secure_cert: "{{ kmra_apphsm_use_secure_cert | quote }}"
+  apphsm_key_in_token_name: "{{ kmra_apphsm_key_in_token_name }}"
+  apphsm_token_name: "{{ kmra_apphsm_token_name }}"
+  test_ctk_loadkey_cert_user_id: "{{ kmra_apphsm_test_ctk_loadkey_cert_user_id }}"
+  test_unique_uid: "{{ kmra_apphsm_test_unique_uid }}"
+  default_user_pin: "{{ kmra_apphsm_default_user_pin }}"
+  default_so_pin: "{{ kmra_apphsm_default_so_pin }}"
+

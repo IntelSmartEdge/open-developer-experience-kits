@@ -1,26 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2021 Intel Corporation
 ---
-- name: Create temporary directory for PCCS build&installation
-  tempfile:
-    state: directory
-  register: temp_dir
-
-- name: Clone PCCS repo
-  git:
-    repo: "{{ _pccs_repo }}"
-    dest: "{{ temp_dir.path }}"
-    version: "{{ _pccs_version }}"
-
-- name: Build docker image
-  docker_image:
-    name: "{{ _pccs_image_name }}"
-    tag: "{{ _pccs_image_tag }}"
-    source: build
-    build:
-      path: "{{ temp_dir.path }}/QuoteGeneration/pccs/container"
-      pull: true
-
 - name: Create {{ _pccs_namespace }} namespace if doesn't exist
   include_role:
     name: baseline_ansible/kubernetes/custom_namespace

@@ -41,7 +41,7 @@
     src: "{{ item }}"
     dest: "{{ tmp_dir.path }}"
     mode: preserve
-  with_items:
+  loop:
     - kustomization.yml
     - customize_calico_container.yml
 
@@ -57,7 +57,7 @@
     src: "{{ item }}.j2"
     dest: "{{ tmp_dir.path }}/{{ item }}"
     mode: preserve
-  with_items:
+  loop:
     - customize_calico_conf.yml
     - change_cidr.yml
 

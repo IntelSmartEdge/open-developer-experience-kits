@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+image:
+  repository: quay.io/prometheus/node-exporter
+  tag: {{ _node_exporter_image_version }}
+
+# Allow access to system time
+containerSecurityContext:
+  capabilities:
+    add:
+      - SYS_TIME
+
+# Work in host's network (it's required in order to get host's network data)
+hostNetwork: true
+# Work in host's PID space (required to access host's /proc info)
+hostPID: true
+# Get access to host's root space (to for example scrape disk data)
+hostRootFsMount: true
+
+# Pod  should be running on every node
+tolerations:
+  - effect: NoSchedule
+    operator: Exists
+
+# Additional commands for node-exporter
+extraArgs:
+   - --web.config={{ _node_exporter_web_configmap_mount_path }}/web-config.yml # Path for TLS configuration
+
+# TLS secret for NodeExporter
+secrets:
+  - name: {{ _node_exporter_tls_secret }}
+    mountPath: {{ _node_exporter_certificate_mount_path }}
+
+# Additional configmaps for NodeExporter
+configmaps:
+ # TLS config
+ - name: {{ _node_exporter_web_configmap_name }}
+   mountPath: {{ _node_exporter_web_configmap_mount_path }}
+
+service:
+  port: {{ telemetry_node_exporter_port }}
+  targetPort: {{ telemetry_node_exporter_port }}
+
+prometheus:
+  monitor:
+    enabled: true
+    namespace: "{{ telemetry_namespace }}"
+    scheme: https
+    tlsConfig:
+      keySecret:
+        key: tls.key
+        name: "{{ telemetry_prometheus_tls_secret_name }}"
+        optional: false
+      cert:
+        secret:
+          key: tls.crt
+          name: "{{ telemetry_prometheus_tls_secret_name }}"
+          optional: false
+      ca:
+        secret:
+          key: ca.crt
+          name: "{{ telemetry_prometheus_tls_secret_name }}"
+          optional: false
+    relabelings:
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - sourceLabels: [__meta_kubernetes_pod_name]
+        regex: '.*node-exporter.*'
+        action: keep
+      - sourceLabels: [__address__]
+        regex: '.*:{{ telemetry_node_exporter_port }}'
+        action: keep
+      - sourceLabels: [__meta_kubernetes_pod_node_name]
+        action: replace
+        targetLabel: instance
+      - sourceLabels: [__meta_kubernetes_pod_name]
+        action: replace
+        targetLabel: kubernetes_pod_name

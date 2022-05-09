@@ -26,7 +26,7 @@
 
     - name: prepare values
       set_fact:
-        ntp_servers_prepared: "{{ ntp_servers | map('regex_replace', '(.*)', 'server \\1 iburst') | join('\n') }}"
+        ntp_servers_prepared: "{{ ntp_servers | map('regex_replace', '^(.*)$', 'server \\1 iburst') | join('\n') }}"
 
     - name: add custom ntp server to chrony config
       blockinfile:

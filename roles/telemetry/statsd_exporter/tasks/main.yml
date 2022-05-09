@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+- name: check if prometheus-statsd-exporter already exists
+  command: kubectl get deployment -n {{ telemetry_namespace }} {{ _statsd_fullname_override }}
+  ignore_errors: true
+  changed_when: false
+  register: get_statsd_exporter
+
+- name: install prometheus-statsd-exporter chart
+  include_tasks: install_statsd_exporter.yml
+  when: get_statsd_exporter.rc != 0

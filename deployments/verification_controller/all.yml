@@ -7,20 +7,8 @@ sriov_network_operator_enable: false
 ## SR-IOV Network Operator configuration
 sriov_network_operator_configure_enable: false
 
-# Grafana
-telemetry_grafana_enable: false
-
-# Prometheus
-telemetry_prometheus_enable: false
-
-# Prometheus-statsd-exporter
-telemetry_statsd_exporter_enable: false
-
-# Collectd
-telemetry_collectd_enable: false
-
-# CAdvisor
-telemetry_cadvisor_enable: false
+# Disable telemetry
+telemetry_enable: false
 
 # Disable Harbor Registry
 harbor_registry_enable: false
@@ -45,5 +33,13 @@ isecl_ta_san_list: ""
 # Enable PCCS deployment
 pccs_enable: true
 
+# Enable KMRA app-hsm deployment
+kmra_enable: true
+
+# Enable Pod Security Policy. This option enables PSP admission controller and creates minimal set of rules.
+psp_enabled: true
+
+#SGX GID
+sgx_prv_gid: 1002
 # Disable CPU reservation for kubelet
 cpu: {}

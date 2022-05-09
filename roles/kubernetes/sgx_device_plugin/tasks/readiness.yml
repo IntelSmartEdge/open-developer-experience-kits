@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+
+- name: load sgx device plugin vars
+  include_vars: ../defaults/main.yml
+
+- name: check sgx device plugin controller manager deployment
+  check_k8s_object:
+    name: "inteldeviceplugins-controller-manager"
+    namespace: "{{ _device_plugin_namespace }}"
+    kind: deployment
+
+- name: check sgx device plugin daemonset
+  check_k8s_object:
+    name: "intel-sgx-plugin"
+    namespace: "{{ _device_plugin_namespace }}"
+    kind: daemonset

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2021 Intel Corporation
 ---
-- name: check if lock file exists
+- name: Check if lock file exists
   stat:
     path: "{{ _redeplyoment_lock_file }}"
   register: redeplyoment_lock_file_stat

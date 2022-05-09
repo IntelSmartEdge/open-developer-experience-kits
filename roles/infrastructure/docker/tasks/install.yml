@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
 - name: update cache
@@ -47,10 +47,10 @@
       until: result is succeeded
       delay: "{{ retry_delay }}"
 
-- name: install Python3 docker module
+- name: install Python2 docker module
   pip:
     name: docker
     state: present
-    executable: pip3
+    executable: pip2
   become: yes
-  when: ansible_python.version.major == 3
+  when: ansible_python.version.major == 2

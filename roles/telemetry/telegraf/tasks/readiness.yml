@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+
+- name: verify that Telegraf DaemonSet deployed correctly
+  check_k8s_object:
+    name: telegraf
+    namespace: telemetry
+    kind: daemonset

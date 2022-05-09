@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+
+namespace: "{{ telemetry_namespace }}"
+
+nameOverride: statsd-exporter
+fullnameOverride: "{{ _statsd_fullname_override }}"
+
+image:
+  repository: prom/statsd-exporter
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: v0.22.4
+
+statsd:
+  # The UDP port on which to receive statsd metric lines.
+  udpPort: "{{ telemetry_statsd_exporter_udp_port }}"
+  # The TCP port on which to receive statsd metric lines.
+  tcpPort: "{{ telemetry_statsd_exporter_tcp_port }}"
+  name: statsd-exporter
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  # The address on which to expose generated Prometheus metrics.
+  port: 9120
+  # Path under which to expose metrics.
+  path: /metrics
+
+tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
+
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ''
+
+proxy:
+  name: "{{ _proxy_cm_name }}"
+  metricsPort: "{{ _proxy_container.metrics_statsd_port }}"
+  internalPort: "{{ _proxy_container.internal_statsd_port }}"
+  serverName: "{{ _proxy_server_name }}"
+  certsDest: "{{ _proxy_container.certs_dest }}"
+  protocols: TLSv1.2 TLSv1.3
+  ciphers:
+    - "TLS_AES_256_GCM_SHA384"
+    - "ECDHE-RSA-AES256-GCM-SHA384"
+    - "ECDHE-ECDSA-AES256-GCM-SHA384"
+
+sm:
+  secretName: "{{ telemetry_prometheus_tls_secret_name }}"

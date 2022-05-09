@@ -123,6 +123,13 @@ hardware_details_tools:
 
 
 python_packages:
-  - cachetools
-  - openshift-client
-  - openshift
+  RedHat:
+    - cachetools
+    - openshift-client
+    - openshift
+  Debian:
+    - cachetools
+    - openshift-client
+    - openshift
+    - testresources
+    - pyopenssl

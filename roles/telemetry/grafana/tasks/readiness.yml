@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+
+- name: verify grafana deployment
+  check_k8s_object:
+    name: grafana
+    namespace: telemetry
+    kind: deployment

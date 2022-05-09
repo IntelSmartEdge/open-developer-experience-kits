@@ -2,12 +2,16 @@
 # Copyright (c) 2021 Intel Corporation
 ---
 isecl_repo: "https://github.com/intel-secl/build-manifest.git"
-isecl_repo_tag: "refs/tags/v4.1.1"
+isecl_repo_tag: "refs/tags/v4.2.0-Beta"
 isecl_repo_manifest: "manifest/data-sovereignty.xml"
+
+isecl_helm_repo: "https://github.com/intel-secl/helm-charts.git"
+isecl_helm_repo_tag: "v4.2.0-Beta"
 
 isecl_build_dir: "{{ project_dir }}/intel-secl"
 isecl_helm_charts_dir: "{{ project_dir }}/helm-charts/isecl"
-isecl_env_file: "{{ project_dir }}/helm-charts/isecl/isecl-k8s.env"
 
+isecl_user_id: 1001
+isecl_name_space: "isecl"
 isecl_nfs_client_mount_path: "/mnt/nfs_client_share"
 isecl_nfs_server_dir: "/mnt/nfs_share"

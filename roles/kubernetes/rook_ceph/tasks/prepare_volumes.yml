@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+# find out the existing LVM on the drive. Note that Ceph eventually converts the
+# drive to lvm when it consumes the drive
+- name: identify the volume groups available in the physical volume
+  shell:
+    "set -o pipefail &&  pvs --noheadings -o vg_name,pv_name | grep $disk | awk '{ print $1}'"
+  args:
+    executable: /bin/bash
+  environment:
+    disk: "/dev/{{ _rook_ceph_osd_name }}"
+  register:
+    shell_output
+  become: yes
+  failed_when: false
+  changed_when: true
+
+- name: add the available volume groups to the list
+  set_fact:
+    vg_list: "{{ shell_output.stdout_lines }}"
+- name: print the populated vg_list
+  debug:
+    msg: "{{ vg_list }}"
+
+- name: remove the volumegroups listed
+  shell: |
+    set -o pipefail
+    yes | vgremove {{ item }}
+  become: yes
+  with_items: "{{ vg_list }}"
+  register:
+    vgremove_output
+  failed_when: false
+  changed_when: true
+- name: print the vgremove execution
+  debug: msg={{ vgremove_output }}  
+
+- name: tear down rook_ceph cluster
+  shell: |
+    echo $disk
+    rm -rf /var/lib/rook/*
+    sgdisk --zap-all $disk
+    dd if=/dev/zero of='$disk' bs=1M count=100 oflag=direct,dsync
+    blkdiscard $disk
+    set -o pipefail && ls /dev/mapper/ceph-* | xargs -I% -- dmsetup remove %
+    rm -rf /dev/ceph-*
+    rm -rf /dev/mapper/ceph--*
+    partprobe $disk
+  args:
+     executable: /bin/bash
+  environment:
+    disk: "/dev/{{ _rook_ceph_osd_name }}"
+  register:
+    shell_output
+  become: yes
+  failed_when: false
+  changed_when: true
+- name: print the shell output
+  debug: msg={{ shell_output }}
+

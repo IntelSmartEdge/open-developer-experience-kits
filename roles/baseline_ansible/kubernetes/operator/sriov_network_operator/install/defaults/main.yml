@@ -7,7 +7,7 @@
 _sriov_network_operator:
   url: "https://github.com/k8snetworkplumbingwg/sriov-network-operator"
   download_dir: "{{ _sriov_network_operator_root_dir }}/src"
-  commit: "ff8c2f1e912b42b45bc2f4591c4d3a4749ae9574"  # https://github.com/k8snetworkplumbingwg/sriov-network-operator/issues/147
+  version: "v1.1.0"
   image_tag: "4.9.0"
   resource_prefix: "intel.com"
   enable_admission_controller: "true"

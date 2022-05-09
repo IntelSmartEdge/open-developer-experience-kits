@@ -1,0 +1,133 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+
+    "type": "object",
+    "properties": {
+        "git": {
+            "type": "object",
+            "properties": {
+                "user": { "type": "string" },
+                "password": { "type": "string" }
+            },
+            "required": ["user", "password"]
+        },
+        "ntp_server": { "type": "string" },
+        "esp": {
+            "type": "object",
+            "properties": {
+                "url": { "$ref": "#/$defs/url" },
+                "branch": { "type": "string" },
+                "dest_dir": { "type": "string" }
+            },
+            "required": ["url", "branch", "dest_dir"]
+        },
+        "dnsmasq": {
+            "type": "object",
+            "properties": {
+                "enabled": { "type": "boolean" }
+            }
+        },
+        "usb_images": {
+            "type": "object",
+            "properties": {
+                "build": { "type": "boolean" },
+                "bios": { "type": "boolean" },
+                "efi": { "type": "boolean" },
+                "all_in_one": { "type": "boolean" },
+                "output_path": { "type": "string" }
+            }
+        },
+        "docker": {
+            "type": "object",
+            "properties": {
+                "registry_mirrors": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "dockerhub": {
+                    "type": "object",
+                    "properties": {
+                        "username": { "type": "string" },
+                        "password": { "type": "string" }
+                    }
+                }
+            }
+        },
+        "profiles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string" },
+                    "url": { "$ref": "#/$defs/url" },
+                    "branch": { "type": "string" },
+                    "scenario": { "enum": ["single-node", "multi-node"] },
+                    "experience_kit": {
+                        "type": "object",
+                        "properties": {
+                            "url": { "$ref": "#/$defs/url" },
+                            "branch": { "type": "string" },
+                            "deployment": { "type": "string" }
+                        },
+                        "required": ["url", "branch", "deployment"]
+                    },
+                    "bare_os": { "type": "boolean" }
+                },
+                "if": {
+                    "properties": { "bare_os": { "const": false } }
+                },
+                "then": {
+                    "required": ["experience_kit"]
+                }
+            },
+            "minItems": 1
+        },
+        "bios": { "$ref": "#/$defs/bios" },
+        "bmc": { "$ref": "#/$defs/bmc" },
+        "hosts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": { "type": "string", "format": "hostname"},
+                    "mac": { "type": "string" },
+                    "bios": { "$ref": "#/$defs/bios" },
+                    "bmc": { "$ref": "#/$defs/bmc" }
+                    },
+                "anyOf": [
+                    { "required": ["mac", "name"]},
+                    { "required": ["mac", "bios"]},
+                    { "required": ["bmc", "name"]},
+                    { "required": ["bmc", "bios"]}
+                ]
+                },
+            "minItems": 1
+        }
+    },
+    "required": ["profiles"],
+    "$defs": {
+        "url": {
+            "type": "string",
+            "pattern": "https?:\/\/"
+            },
+        "bmc": {
+            "type": "object",
+            "properties": {
+                "address": {"type": "string"},
+                "user": {"type": "string"},
+                "password": {"type": "string"}
+                },
+            "minProperties": 1
+            },
+        "bios": {
+            "type": "object",
+            "properties": {
+                "tpm": {"type": "boolean"},
+                "secure_boot": {"type": "boolean"}
+                },
+            "minProperties": 1
+            }
+        }
+}

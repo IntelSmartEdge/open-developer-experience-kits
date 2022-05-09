@@ -21,17 +21,10 @@
       when: sgx_enabled | default(False)
     - role: kubernetes/nfd
       when: "ne_nfd_enable | default(True)"
-
-    - role: telemetry/prometheus
-      when: "telemetry_prometheus_enable | default(True)"
-    - role: telemetry/statsd-exporter
-      when: "telemetry_statsd_exporter_enable | default(True)"
-    - role: telemetry/collectd/controlplane
-      when: "telemetry_collectd_enable | default(True)"
-    - role: telemetry/cadvisor
-      when: "telemetry_cadvisor_enable | default(True)"
-    - role: telemetry/grafana
-      when: "telemetry_grafana_enable | default(True)"
+    - role: kubernetes/kubevirt
+      when: kubevirt_enable | default(False)
+    - role: kubernetes/rook_ceph
+      when: rook_ceph_enabled | default(False)
 
 - hosts: edgenode_group
   any_errors_fatal: true
@@ -47,13 +40,10 @@
       reference_host: "{{ groups['controller_group'][0] }}"
       when: "sriov_network_operator_enable | default(False)"
 
-    - role: telemetry/collectd/node
-      when: "telemetry_collectd_enable | default(True)"
-
-- hosts: controller_group
-  any_errors_fatal: true
-  roles:
-    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/install
-      when: "sriov_network_operator_enable | default(False)"
-    - role: baseline_ansible/kubernetes/operator/sriov_network_operator/configure
-      when: "sriov_network_operator_enable and sriov_network_operator_configure_enable | default(False)"
+    # ESP is executing deployment sequentially: first controller node then worker node.
+    # The kubernetes/operators role wraps SRIOV network and FEC operators.
+    # The kubernetes/operators role must be run on controller, but after node is ready.
+    # It is delegated from worker to controller and should be run only once in case more worker nodes in configuration.
+    - role: kubernetes/operators
+      delegate_to: "{{ groups['controller_group'][0] }}"
+      run_once: true

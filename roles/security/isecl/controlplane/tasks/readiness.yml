@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2022 Intel Corporation
+
+---
+
+- name: load ISecL edge node service variables
+  include_vars: ../../common/defaults/main.yml
+
+- name: check ISecL Trust-Agent service status
+  check_k8s_object:
+    name: "trustagent-suefi"
+    namespace: "{{ isecl_name_space }}"
+    kind: daemonset
+
+- name: check ISecL edge node services
+  check_k8s_object:
+    name: "{{ item }}"
+    namespace: "{{ isecl_name_space }}"
+    kind: deployment
+  with_items:
+    - ihub
+    - isecl-scheduler
+    - isecl-controller
+    - admission-controller

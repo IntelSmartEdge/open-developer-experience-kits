@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.cadvisor.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.cadvisor.name }}
+    app: {{ .Values.cadvisor.name }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    chart: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.proxy.metricsCadvisorPort }}
+      targetPort: {{ .Values.proxy.metricsCadvisorPort }}
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: cadvisor

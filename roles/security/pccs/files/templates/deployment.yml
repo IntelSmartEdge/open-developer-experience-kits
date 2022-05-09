@@ -19,16 +19,32 @@ spec:
         {{ $key }}: {{ toYaml $value }}
         {{- end }}
     spec:
+      initContainers:
+        - image: "{{ .Values.initContainer.image }}:{{ .Values.initContainer.tag }}"
+          imagePullPolicy: {{ .Values.initContainer.imagePullPolicy }}
+          name: {{ .Values.initContainer.name }}
+          command:
+            - /bin/chown
+            - -R
+            - "{{ .Values.securityContext.runAsUser }}"
+            - /tmp
+          volumeMounts:
+            - name: {{ .Values.pckCacheVolume.name }}
+              mountPath: {{ .Values.pckCacheVolume.mountPath }}
       containers:
         - name: {{ .Values.container.name }}
-          image: "{{ .Values.container.image }}:{{ .Values.container.tag }}"
-          imagePullPolicy: Never # The image is built locally on controlplane
+          securityContext:
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+          image: "{{ .Values.container.image_repo }}/{{ .Values.container.image }}:{{ .Values.container.tag }}"
+          imagePullPolicy: {{ .Values.container.imagePullPolicy }}
           volumeMounts:
             - name: {{ .Values.container.certs.volumeName }}
               mountPath: {{ .Values.container.certs.dest }}
             - name: {{ .Values.configmap.name }}
               mountPath: {{ .Values.container.config.dest }}
               subPath: {{ .Values.container.config.filename }}
+            - name: {{ .Values.pckCacheVolume.name }}
+              mountPath: {{ .Values.pckCacheVolume.mountPath }}
           ports:
             - containerPort: {{ .Values.container.port }}
       volumes:
@@ -43,6 +59,10 @@ spec:
         - name: {{ .Values.configmap.name }}
           configMap:
             name: {{ .Values.configmap.name }}
+        - name: {{ .Values.pckCacheVolume.name }}
+          hostPath:
+            path: {{ .Values.pckCacheVolume.hostPath }}
+            type: DirectoryOrCreate
       tolerations:
         - effect: NoSchedule
           key: node-role.kubernetes.io/master

@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+# Config map for version 1.0.0-rc.0.
+# In case of update please check https://github.com/prometheus/node_exporter/tree/master/https
+# for new config keys.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ _node_exporter_web_configmap_name }}
+  namespace: {{ telemetry_namespace }}
+  labels:
+    name: {{ _node_exporter_web_configmap_name }}
+data:
+  web-config.yml: |-
+    tls_server_config:
+      cert_file: "{{ _node_exporter_certificate_mount_path }}/tls.crt"
+      key_file: "{{ _node_exporter_certificate_mount_path }}/tls.key"
+      client_auth_type: "RequestClientCert"
+      client_ca_file: "{{ _node_exporter_certificate_mount_path }}/ca.crt"
+      cipher_suites:
+        - TLS_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 # Required by http/2

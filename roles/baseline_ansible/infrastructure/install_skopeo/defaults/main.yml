@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
 makefile_env_path_var: "/usr/local/go/bin:{{ ansible_env.PATH }}"
@@ -7,6 +7,6 @@ makefile_env_path_var: "/usr/local/go/bin:{{ ansible_env.PATH }}"
 
 skopeo_url: "https://github.com/containers/skopeo"
 skopeo_download_dir: "{{ ansible_env.HOME }}/go/src/github.com/containers/skopeo"
-skopeo_commit: "v1.4.1"
+skopeo_commit: "v1.5.2"
 skopeo_policy_dir: "{{ ansible_env.HOME }}/.config/containers"
 skopeo_default_policy_url: "https://raw.githubusercontent.com/containers/skopeo/main/default-policy.json"

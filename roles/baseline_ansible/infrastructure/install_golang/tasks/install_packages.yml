@@ -7,5 +7,5 @@
   retries: "{{ number_of_retries }}"
   until: result is succeeded
   delay: "{{ retry_delay }}"
-  with_items: "{{ golang_packages | default([]) }}"
+  loop: "{{ golang_packages | default([]) }}"
   when: (item.min_golang_version is not defined) or (golang_version is version_compare(item.min_golang_version, '>='))

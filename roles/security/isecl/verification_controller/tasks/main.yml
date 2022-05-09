@@ -7,62 +7,29 @@
 
 - name: update controller IP
   set_fact:
-    isecl_control_plane_ip: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+    isecl_control_plane_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
   when: isecl_control_plane_ip | length == 0
 
 - name: Setup helm charts dir
   include_tasks: ../../common/tasks/setup_helm_chart_dir.yml
 
-- name: Copy aas populateuser binary and env to helm chart folder
-  copy:
-    src: "{{ isecl_build_dir }}/k8s/manifests/aas/scripts"
-    dest: "{{ isecl_helm_charts_dir }}/"
-    remote_src: yes
-    owner: "{{ ansible_user | default(ansible_user_id) }}"
-    mode: a=rx,u+w
-
 - name: Setup NFS
   include_tasks: ../../common/tasks/setup_nfs.yml
-  vars:
-    helm_values_files:
-      - "{{ isecl_helm_charts_dir }}/aas-db/values.yaml"
-      - "{{ isecl_helm_charts_dir }}/aas/values.yaml"
-      - "{{ isecl_helm_charts_dir }}/cms/values.yaml"
-      - "{{ isecl_helm_charts_dir }}/hvs-db/values.yaml"
-      - "{{ isecl_helm_charts_dir }}/hvs/values.yaml"
 
-- name: Copy isecl-bootstrap-db-services-helm.sh
-  copy:
-    src: "isecl-bootstrap-db-services-helm.sh"
-    dest: "{{ isecl_helm_charts_dir }}/"
-    mode: preserve
+- name: Generate isecl control plane usecase values.yml
+  template:
+    src: isecl-control-plane-values.yaml.j2
+    dest: "{{ isecl_helm_charts_dir }}/usecases/twp-control-plane/values.yaml"
+    mode: a=rx,u+w
 
-- name: Deploy isecl DB services
-  command: "./isecl-bootstrap-db-services-helm.sh up foundational-security"
+- name: Run helm dependency update
+  command: helm dependency update usecases/twp-control-plane/
   args:
     chdir: "{{ isecl_helm_charts_dir }}"
   changed_when: false
 
-- name: Deploy isecl core service CMS
-  command: "./isecl-bootstrap-helm.sh up cms"
-  args:
-    chdir: "{{ isecl_helm_charts_dir }}"
-  changed_when: false
-
-- name: Deploy isecl core service AAS
-  command: "./isecl-bootstrap-helm.sh up authservice"
-  args:
-    chdir: "{{ isecl_helm_charts_dir }}"
-  changed_when: false
-
-- name: Deploy isecl NATS
-  command: "./isecl-bootstrap-helm.sh up nats"
-  args:
-    chdir: "{{ isecl_helm_charts_dir }}"
-  changed_when: false
-
-- name: Deploy isecl core service HVS
-  command: "./isecl-bootstrap-helm.sh up hvs"
+- name: Deploy isecl control plan services
+  command: "helm install twp-cp usecases/twp-control-plane/ -n {{ isecl_name_space }} --create-namespace"
   args:
     chdir: "{{ isecl_helm_charts_dir }}"
   changed_when: false

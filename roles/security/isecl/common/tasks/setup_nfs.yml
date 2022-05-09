@@ -6,28 +6,21 @@
     install_nfs_server: "{{ \
       isecl_nfs_server is undefined \
       or isecl_nfs_server | length == 0 \
-      or isecl_nfs_server == hostvars[inventory_hostname].ansible_default_ipv4.address \
+      or isecl_nfs_server == hostvars[inventory_hostname].ansible_host \
       or isecl_nfs_server == hostvars[inventory_hostname].ansible_hostname \
       }}"
 
 - name: Update NFS server IP
   set_fact:
-    isecl_nfs_server: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+    isecl_nfs_server: "{{ hostvars[inventory_hostname].ansible_host }}"
   when: install_nfs_server
 
-- name: Update NFS server ip in helm charts
-  replace:
-    path: "{{ item }}"
-    regexp: "<nfs-server-ip/nfs-server-hostname>"
-    replace: "{{ isecl_nfs_server }}"
-  loop: "{{ helm_values_files }}"
-
-- name: Update NFS mount path in helm charts
-  replace:
-    path: "{{ item }}"
-    regexp: "<nfs-client-mount-path>"
-    replace: "{{ isecl_nfs_server_dir }}"
-  loop: "{{ helm_values_files }}"
+- name: Create folder structure in NFS directory
+  command: "./setup-nfs.sh {{ isecl_nfs_server_dir }} {{ isecl_user_id }} {{ isecl_nfs_server }}"
+  args:
+    chdir: "{{ isecl_helm_charts_dir }}"
+  changed_when: false
+  become: true
 
 - name: Setup NFS server
   include_role:
@@ -45,9 +38,3 @@
     nfs_client_share_dir: "{{ isecl_nfs_client_mount_path }}"
     nfs_server_dir: "{{ isecl_nfs_server_dir }}"
 
-- name: Create folder structure in NFS directory
-  command: "{{ isecl_build_dir }}/k8s/create-dirs-nfs.sh"
-  args:
-    chdir: "{{ isecl_nfs_client_mount_path }}"
-  changed_when: false
-  become: yes

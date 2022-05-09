@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+- name: create directory for rook_ceph
+  file:
+       path: "{{ _rook_ceph_files_dir }}"
+       state: directory
+       recurse: yes
+       mode: a=rx,u+w,g+w
+  changed_when: true
+
+- name: download all the yaml files to host
+  get_url:
+    url: "{{ item }}"
+    dest: "{{ _rook_ceph_files_dir }}"
+    force: yes
+  loop:
+  - "{{ _crds_url }}"
+  - "{{ _common_url }}"
+  - "{{ _operator_url }}"
+  - "{{ _toolbox_url }}"
+
+- name: prepare drives
+  include_tasks: prepare_drives.yml
+
+- name: prepare volumes
+  include_tasks: prepare_volumes.yml
+
+- name: copy storageclass template to host
+  template:
+    src: storageclass.yaml.j2
+    dest: "{{ _rook_ceph_files_dir }}/storageclass.yaml"
+    mode: a=rw,u+x
+
+- name: copy cluster template to host
+  template:
+    src: cluster.yaml.j2
+    dest: "{{ _rook_ceph_files_dir }}/cluster.yaml"
+    mode: a=rw,u+x
+
+- name: Launch and configure
+  command: kubectl apply -f "{{ _rook_ceph_files_dir }}/{{ item }}"
+  loop:
+  - "crds.yaml"
+  - "common.yaml"
+  - "operator.yaml"
+  - "cluster.yaml"
+  - "toolbox.yaml"
+  - "storageclass.yaml"
+  changed_when: true

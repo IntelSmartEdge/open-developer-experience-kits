@@ -53,7 +53,13 @@
   when:
     - ansible_distribution == "RedHat"
 
-- name: CentOS handling
+- name: set full distribution version CentOS
+  set_fact:
+    full_dist_version: "{{ release.stdout | regex_replace('.*(\\d+.\\d+.\\d\\d\\d\\d).*', '\\1') }}"
+  when:
+    - ansible_distribution == "CentOS"
+
+- name: CentOS 8 handling
   block:
     - name: install wget
       yum:
@@ -61,22 +67,24 @@
         state: present
       become: yes
     
-    - name: set full distribution version CentOS
-      set_fact:
-        full_dist_version: "{{ release.stdout | regex_replace('.*(\\d+.\\d+.\\d\\d\\d\\d).*', '\\1') }}"
-
     - name: get latest CentOS release
       shell: set -o pipefail && wget -qO- http://mirror.centos.org/centos/8/BaseOS/x86_64/os/repodata/repomd.xml | grep revision | cut -f2 -d'>' | cut -f1 -d'<'
       register: latest_release
+      until: latest_release is not failed
+      retries: "{{ number_of_retries | default(10) }}"
+      delay: " {{ retry_delay | default(5) }}"
       changed_when: false
 
     - name: set latest CentOS release fact
       set_fact:
-        latest_centos_release: "{{ latest_release.stdout }}"
+        latest_centos_8_release: "{{ latest_release.stdout }}"
 
-    - name: Configure CentOS Vault repository
-      include_tasks: redhat_centos_vault_repository.yml
-      when:
-        - centos_vault_repository_enabled
   when:
+    - ansible_distribution == "CentOS"
+    - ansible_distribution_version >= '8'
+
+- name: Configure CentOS Vault repository
+  include_tasks: redhat_centos_vault_repository.yml
+  when:
+    - centos_vault_repository_enabled
     - ansible_distribution == "CentOS"

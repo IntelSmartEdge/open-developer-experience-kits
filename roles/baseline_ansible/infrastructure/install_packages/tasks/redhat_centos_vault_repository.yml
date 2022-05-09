@@ -35,4 +35,4 @@
     enabled: true
   when:
     - ansible_distribution_version >= '8'
-    - full_dist_version not in latest_centos_release
+    - full_dist_version not in latest_centos_8_release

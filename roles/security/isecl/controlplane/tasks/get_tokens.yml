@@ -1,31 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2021 Intel Corporation
 ---
-
-- name: Get install admin bearer token
-  uri:
-    method: POST
-    url: "https://{{ isecl_control_plane_ip }}:30444/aas/v1/token"
-    headers:
-      Accept: application/jwt
-    body:
-      username: "{{ isecl_users_install_admin_username }}"
-      password: "{{ isecl_users_install_admin_password }}"
-    body_format: json
-    validate_certs: no
-    return_content: yes
-    status_code:
-      - 200
-  register: install_admin_bearer_token_req
-  until: install_admin_bearer_token_req is not failed
-  retries: 10
-  delay: 10
-
 - name: Get global admin bearer token
   uri:
     method: POST
     url: "https://{{ isecl_control_plane_ip }}:30444/aas/v1/token"
     headers:
+      Content-Type: application/json
       Accept: application/jwt
     body:
       username: "{{ isecl_users_global_admin_username }}"
@@ -40,27 +21,7 @@
   retries: 10
   delay: 10
 
-- name: Get custom claims admin bearer token
-  uri:
-    method: POST
-    url: "https://{{ isecl_control_plane_ip }}:30444/aas/v1/token"
-    headers:
-      Accept: application/jwt
-    body:
-      username: "{{ isecl_users_custom_claims_admin_username }}"
-      password: "{{ isecl_users_custom_claims_admin_password }}"
-    body_format: json
-    validate_certs: no
-    return_content: yes
-    status_code:
-      - 200
-  register: custom_claims_admin_bearer_token_req
-  until: custom_claims_admin_bearer_token_req is not failed
-  retries: 10
-  delay: 10
-
 - name: Set bearer tokens
   set_fact:
-    isecl_install_admin_bearer_token: "{{ install_admin_bearer_token_req.content }}"
     isecl_global_admin_bearer_token: "{{ global_admin_bearer_token_req.content }}"
-    isecl_custom_claims_admin_bearer_token: "{{ custom_claims_admin_bearer_token_req.content }}"
+

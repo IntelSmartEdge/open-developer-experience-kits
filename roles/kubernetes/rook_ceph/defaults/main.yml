@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+_rook_ceph_main_dir: "{{ project_dir }}/rook_ceph"
+_rook_ceph_files_dir: "{{ _rook_ceph_main_dir }}/files"
+
+_rook_ceph_version_tag: "v1.7.10"
+
+_crds_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/crds.yaml"
+_common_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/common.yaml"
+_operator_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/operator.yaml"
+_toolbox_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/toolbox.yaml"
+
+rook_ceph_namespace: "rook-ceph"
+
+_rook_ceph_limits:
+  api:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  mgr:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1024Mi"
+  mon:
+    requests:
+      cpu: "500m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "2048Mi"
+  osd:
+    requests:
+      cpu: "500m"
+      memory: "4Gi"
+    limits:
+      cpu: "2000m"
+      memory: "8Gi"
+

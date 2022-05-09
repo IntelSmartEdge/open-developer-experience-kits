@@ -25,7 +25,7 @@
 # is always 0x10000 as the default value of allowedMarkBits/configParams.IptablesMarkMask is 0xffff0000 and it is the first bit available
 - name: add firewall rule for calico
   command: "{{ item }}"
-  with_items:
+  loop:
     - firewall-cmd --direct --permanent --add-rule ipv4 filter FORWARD 0 -m mark --mark 0x10000/0x10000 -m comment --comment "SmartEdge-Calico" -j ACCEPT
     - firewall-cmd --reload
   changed_when: true
@@ -39,7 +39,7 @@
 # calico then we can accept it explicitly in firewalld.
 - name: accept calico packets in firewalld
   command: "{{ item }}"
-  with_items:
+  loop:
     - "firewall-cmd --permanent --zone=trusted --add-source={{ calico_cidr }}"
     - "firewall-cmd --reload"
   changed_when: true

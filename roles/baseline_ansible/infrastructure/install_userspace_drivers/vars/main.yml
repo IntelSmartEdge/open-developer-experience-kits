@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+install_dependencies:
+  Debian:
+    - build-essential
+    - libnuma-dev
+    - libpcap-dev
+    - linux-headers-{{ ansible_kernel }}
+    - pkg-config
+    - python3-pip
+    - meson
+  RedHat:
+    - numactl-devel
+    - "@Development tools"
+    - elfutils-libelf-devel
+    - pkgconfig

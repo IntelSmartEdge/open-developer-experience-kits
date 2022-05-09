@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+telemetry_telegraf_port: "9105"
+telemetry_node_exporter_port: "9100"

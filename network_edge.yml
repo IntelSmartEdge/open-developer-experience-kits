@@ -23,3 +23,7 @@
 
 - name: Provision Kubernetes cluster
   import_playbook: playbooks/kubernetes.yml
+
+- name: Provision telemetry components
+  import_playbook: playbooks/telemetry.yml
+  when: telemetry_enable | default(True)

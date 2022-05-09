@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ template "prometheus-statsd-exporter.fullname" . }}
+  labels: {{- include "prometheus-statsd-exporter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: metrics
+spec:
+  selector:
+    matchLabels:
+      {{- include "prometheus-statsd-exporter.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: https
+      path: "/metrics"
+      scheme: HTTPS
+      tlsConfig:
+        ca:
+          secret:
+            key: ca.crt
+            name: {{ .Values.sm.secretName }}
+            optional: false
+        cert:
+          secret:
+            key: tls.crt
+            name: {{ .Values.sm.secretName }}
+            optional: false
+        keySecret:
+          key: tls.key
+          name: {{ .Values.sm.secretName }}
+          optional: false
+        insecureSkipVerify: true
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          targetLabel: instance

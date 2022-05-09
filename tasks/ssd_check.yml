@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+- name: declare an empty list for storing the dev
+  set_fact:
+    ssd_devices: []
+- name: count the number of SSDs
+  set_fact:
+    ssd_devices: "{{ ssd_devices + [item.key] }}"
+  when:
+  - item.key.startswith('sd')
+  - item.value is not search('usb-*')
+  loop: "{{ ansible_devices | dict2items }}"
+- name: list the ssd devices in the edge node
+  debug:
+    msg: "available SSD devices in the node {{ ssd_devices }}"
+
+- name: fail if only one SSD is present in the node
+  fail:
+   msg: "Only 1 SSD is present in the node, can't deploy rook-ceph"
+  when:
+  - (ssd_devices | length) == 1
+

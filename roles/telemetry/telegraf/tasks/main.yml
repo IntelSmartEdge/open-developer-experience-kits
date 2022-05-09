@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+- name: check if telegraf already exists
+  command: helm status telegraf -n {{ telemetry_namespace }}
+  ignore_errors: true
+  changed_when: false
+  register: get_telegraf
+
+- name: install telegraf
+  include_tasks: install_telegraf.yml
+  when: get_telegraf.rc != 0

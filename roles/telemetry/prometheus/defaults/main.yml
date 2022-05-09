@@ -3,93 +3,27 @@
 
 ---
 _pv_dir: "{{ _persistent_volumes_dest }}/prometheus"
-_pv_names:
-  - prometheus-volume
+_pv_name: prometheus-volume
 
-_prometheus_chart_dir: "{{ ne_helm_charts_default_dir }}/prometheus"
-_prometheus_chart_commit: "prometheus-14.9.2"
-_prometheus_chart_url: "https://raw.githubusercontent.com/prometheus-community/helm-charts/{{ _prometheus_chart_commit }}/charts/prometheus/"
+_prometheus_release_name: prometheus
+_prometheus_image_version: v2.32.1
+_prometheus_helm_repo:
+  url: https://prometheus-community.github.io/helm-charts
+  version: "33.1.0"
+  name: kube-prometheus-stack
 
-_prometheus_chart:
-  - ".helmignore"
-  - "Chart.yaml"
-  - "values.yaml"
+_prometheus_config_reloader_version: v0.55.0
 
-_proxy_server_name: prometheus
-_proxy_secret_name: prometheus-tls
+telemetry_prometheus_tls_secret_name: prometheus-tls
+_prometheus_tls_names:
+  [
+    "{{ _prometheus_release_name }}",
+    "{{ _prometheus_release_name }}-prometheus",
+  ]
+_prometheus_charts_dir: "{{ ne_helm_charts_default_dir }}/kube-prometheus-stack"
 
-_node_exporter_secret: node-exporter-tls
-_node_exporter_name: node_exporter
-
-_prometheus_chart_templates:
-  - "templates/NOTES.txt"
-  - "templates/_helpers.tpl"
-  # - "templates/alertmanager/clusterrole.yaml"
-  # - "templates/alertmanager/clusterrolebinding.yaml"
-  # - "templates/alertmanager/cm.yaml"
-  # - "templates/alertmanager/deployment.yaml"
-  # - "templates/alertmanager/headless-svc.yaml"
-  # - "templates/alertmanager/ingress.yaml"
-  # - "templates/alertmanager/netpol.yaml"
-  # - "templates/alertmanager/pdb.yaml"
-  # - "templates/alertmanager/psp.yaml"
-  # - "templates/alertmanager/pvc.yaml"
-  # - "templates/alertmanager/role.yaml"
-  # - "templates/alertmanager/service.yaml"
-  # - "templates/alertmanager/serviceaccount.yaml"
-  # - "templates/alertmanager/sts.yaml"
-  - "templates/node-exporter/daemonset.yaml"
-  - "templates/node-exporter/psp.yaml"
-  - "templates/node-exporter/role.yaml"
-  - "templates/node-exporter/rolebinding.yaml"
-  - "templates/node-exporter/svc.yaml"
-  - "templates/node-exporter/serviceaccount.yaml"
-  # - "templates/pushgateway/clusterrole.yaml"
-  # - "templates/pushgateway/clusterrolebinding.yaml"
-  # - "templates/pushgateway/deploy.yaml"
-  # - "templates/pushgateway/ingress.yaml"
-  # - "templates/pushgateway/netpol.yaml"
-  # - "templates/pushgateway/pdb.yaml"
-  # - "templates/pushgateway/psp.yaml"
-  # - "templates/pushgateway/pvc.yaml"
-  # - "templates/pushgateway/service.yaml"
-  # - "templates/pushgateway/serviceaccount.yaml"
-  - "templates/server/clusterrole.yaml"
-  - "templates/server/clusterrolebinding.yaml"
-  - "templates/server/cm.yaml"
-  - "templates/server/deploy.yaml"
-  - "templates/server/headless-svc.yaml"
-  - "templates/server/ingress.yaml"
-  - "templates/server/netpol.yaml"
-  - "templates/server/pdb.yaml"
-  - "templates/server/psp.yaml"
-  - "templates/server/pvc.yaml"
-  - "templates/server/rolebinding.yaml"
-  - "templates/server/service.yaml"
-  - "templates/server/serviceaccount.yaml"
-  - "templates/server/sts.yaml"
-  - "templates/server/vpa.yaml"
-
-_prometheus_dependency_charts:
-  - "charts/kube-state-metrics/.helmignore"
-  - "charts/kube-state-metrics/Chart.yaml"
-  - "charts/kube-state-metrics/values.yaml"
-  - "charts/kube-state-metrics/templates/clusterrolebinding.yaml"
-  - "charts/kube-state-metrics/templates/clusterrole.yaml"
-  - "charts/kube-state-metrics/templates/deployment.yaml"
-  - "charts/kube-state-metrics/templates/_helpers.tpl"
-  - "charts/kube-state-metrics/templates/kubeconfig-secret.yaml"
-  - "charts/kube-state-metrics/templates/NOTES.txt"
-  - "charts/kube-state-metrics/templates/pdb.yaml"
-  - "charts/kube-state-metrics/templates/podsecuritypolicy.yaml"
-  - "charts/kube-state-metrics/templates/psp-clusterrolebinding.yaml"
-  - "charts/kube-state-metrics/templates/psp-clusterrole.yaml"
-  - "charts/kube-state-metrics/templates/serviceaccount.yaml"
-  - "charts/kube-state-metrics/templates/servicemonitor.yaml"
-  - "charts/kube-state-metrics/templates/service.yaml"
-  - "charts/kube-state-metrics/templates/stsdiscovery-rolebinding.yaml"
-  - "charts/kube-state-metrics/templates/stsdiscovery-role.yaml"
-
-_proxy_image: nginxinc/nginx-unprivileged
-_proxy_image_tag: 1.20-alpine
-_proxy_user_id: 101
+telemetry_prometheus_scrape_interval_seconds: 60
+telemetry_prometheus_retention: 15d
+telemetry_prometheus_remote_write_targets: []
+telemetry_prometheus_nodeport: 30000
+telemetry_prometheus_nodeport_expose: false

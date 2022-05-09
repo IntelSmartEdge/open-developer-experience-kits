@@ -8,7 +8,7 @@
       src: ./scripts/log_collector{{ item.ext }}
       dest: "{{ ansible_facts.user_dir }}/log_collector{{ item.ext }}"
       mode: "{{ item.mode }}"
-    with_items:
+    loop:
     - {ext: "", mode: "a=rx,u+w"}
     - {ext: ".json", mode: "a=r,u+w"}
 

@@ -15,7 +15,7 @@
     cni_weight: 10
 
 - name: wait for cluster to go into ready state
-  command: kubectl wait --for=condition=Ready node --all --timeout=200s
+  command: kubectl wait --for=condition=Ready node --all --timeout=10m
   changed_when: false
   when: "'controller_group' in group_names"
 
@@ -29,7 +29,7 @@
     - name: apply remaining CNIs
       include_role:
         name: "kubernetes/cni/{{ cni }}/{{ role_postfix }}"
-      with_items: "{{ kubernetes_cnis[1:] }}"
+      loop: "{{ kubernetes_cnis[1:] }}"
       when: "cni + '/' + role_postfix in available_cni_roles" # run only if 'cni/node_type' is available in the roles/kubernetes/cni/ tree
       loop_control:
         loop_var: cni

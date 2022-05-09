@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+# Playbook for observability features
+
+- hosts: edgenode_group
+  roles:
+    - role: telemetry/open_common_ports
+- hosts: controller_group
+  roles:
+    - role: telemetry/prometheus
+    - role: telemetry/node_exporter
+    - role: telemetry/statsd_exporter
+      when: telemetry_statsd_exporter_enable | default(True)
+    - role: telemetry/telegraf
+      when: telemetry_telegraf_enable | default(True)
+    - role: telemetry/cadvisor
+      when: telemetry_cadvisor_enable | default(True)
+    - role: telemetry/grafana
+      when: "telemetry_grafana_enable | default(True)"

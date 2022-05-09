@@ -23,7 +23,7 @@
       dest: "{{ _sriov_network_config_dir }}/{{ item.name }}-sriov_network_node_policy.yml"
       force: true
       mode: preserve
-    with_items: "{{ sriov_network_node_policies }}"
+    loop: "{{ sriov_network_node_policies }}"
 
   - name: Create namespaces for SriovNetworks if specified
     include_role:
@@ -39,7 +39,7 @@
       dest: "{{ _sriov_network_config_dir }}/{{ item.name }}-sriov_network.yml"
       force: true
       mode: preserve
-    with_items: "{{ sriov_networks }}"
+    loop: "{{ sriov_networks }}"
 
   - name: apply sriov network configuration
     command: kubectl apply -f  ./

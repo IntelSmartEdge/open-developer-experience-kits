@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: verify statsd-exporter deployment
+  check_k8s_object:
+    name: statsd-exporter
+    namespace: telemetry
+    kind: Deployment

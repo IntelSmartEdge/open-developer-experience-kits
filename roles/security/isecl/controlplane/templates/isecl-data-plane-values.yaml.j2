@@ -1,0 +1,126 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+aas-manager:
+  image:
+    name: isecl/aas-manager # Authentication & Authorization Manager image name<br> (**REQUIRED**)
+  aas:
+    url: https://{{ isecl_control_plane_ip }}:30444/aas/v1 # Authservice Base Url
+  hostAliasEnabled: false # Set this to true for using host aliases and also add entries accordingly in ip, hostname entries. hostalias is required when ingress is deployed and pods are not able to resolve the domain names
+  secret:
+    superAdminUsername: {{ isecl_users_super_admin_username }}
+    superAdminPassword: {{ isecl_users_super_admin_password }}
+    globalAdminUsername: {{ isecl_users_global_admin_username }}
+    globalAdminPassword: {{ isecl_users_global_admin_password }}
+  aliases:
+    hostAliases:
+      - ip: ""
+        hostnames:
+          - ""
+          - ""
+
+trustagent:
+  image:
+    name: isecl/tagent # Trust Agent image name<br> (**REQUIRED**)
+
+  nodeLabel:
+    txt: TXT-ENABLED # The node label for TXT-ENABLED hosts<br> (**REQUIRED IF NODE IS TXT ENABLED**)
+    suefi: SUEFI-ENABLED # The node label for SUEFI-ENABLED hosts (**REQUIRED IF NODE IS SUEFI ENABLED**)
+
+  config:
+    tpmOwnerSecret:  # The TPM owner secret if TPM is already owned
+
+  hostAliasEnabled: false # Set this to true for using host aliases and also add entries accordingly in ip, hostname entries. hostalias is required when ingress is deployed and pods are not able to resolve the domain names
+  aliases:
+    hostAliases:
+      - ip: ""
+        hostnames:
+          - ""
+          - ""
+
+isecl-controller:
+  image:
+    name: isecl/k8s-controller # ISecL Controller Service image name<br> (**REQUIRED**)
+  nodeTainting:
+    taintRegisteredNodes: true # If set to true, taints the node which are joined to the k8s cluster. (Allowed values: `true`\`false`)
+    taintRebootedNodes: true # If set to true, taints the node which are rebooted in the k8s cluster. (Allowed values: `true`\`false`) 
+    taintUntrustedNode: true # If set to true, taints the node which has trust tag set to false in node labels. (Allowed values: `true`\`false`)
+
+ihub:
+  image:
+    name: isecl/ihub # Integration Hub Service image name<br> (**REQUIRED**)
+  k8sApiServerPort: 6443
+  hostAliasEnabled: false # Set this to true for using host aliases and also add entries accordingly in ip, hostname entries. hostalias is required when ingress is deployed and pods are not able to resolve the domain names
+  aliases:
+    hostAliases:
+      - ip: ""
+        hostnames:
+          - ""
+          - ""
+
+isecl-scheduler:
+  image:
+    name: isecl/k8s-scheduler # ISecL Scheduler image name<br> (**REQUIRED**)
+
+admission-controller:
+  image:
+    name: isecl/k8s-admission-controller
+  caBundle: {{ ca_bundle.stdout }}
+
+nats-init:
+  image:
+    name: isecl/nats-init # The image name of nats-init container
+
+global:
+  controlPlaneHostname: {{ hostvars[inventory_hostname].ansible_default_ipv4.address }}  # K8s control plane IP/Hostname<br> (**REQUIRED**)
+  controlPlaneLabel: node-role.kubernetes.io/master #K8s control plane label<br> (**REQUIRED**)<br> Example: `node-role.kubernetes.io/master` in case of `kubeadm`/`microk8s.io/cluster` in case of `microk8s`
+
+  image:
+    registry: 
+    pullPolicy: IfNotPresent # The pull policy for pulling from container registry<br> (Allowed values: `Always`/`IfNotPresent`)
+    imagePullSecret:  # The image pull secret for authenticating with image registry, can be left empty if image registry does not require authentication
+    initName: isecl/init-wait # The image name of init container
+
+  config:
+    dbhostSSLPodRange: 10.1.0.0/8 # PostgreSQL DB Host Address(IP address/subnet-mask). IP range varies for different k8s network plugins(Ex: Flannel - 10.1.0.0/8 (default), Calico - 192.168.0.0/16).
+    nats:
+      enabled: true # Enable/Disable NATS mode<br> (Allowed values: `true`\`false`)
+      servers: nats://{{ isecl_control_plane_ip }}:30222 # NATS Server IP/Hostname<br> (**REQUIRED IF ENABLED**) ie "nats://<hostname>:30222"
+      serviceMode: outbound # The model for TA<br> (Allowed values: `outbound`)<br> (**REQUIRED IF ENABLED**)
+
+  hvsUrl: https://{{ isecl_control_plane_ip }}:30443/hvs/v2 # Hvs Base Url, Do not include "/" at the end
+  cmsUrl: https://{{ isecl_control_plane_ip }}:30445/cms/v1 # CMS Base Url, Do not include "/" at the end
+  aasUrl: https://{{ isecl_control_plane_ip }}:30444/aas/v1 # Authservice Base Url, Do not include "/" at the end
+
+  cmsTlsSha384: {{ isecl_cms_tls_hash }}
+  storage:
+    nfs:
+      server: {{ isecl_nfs_server }} # The NFS Server IP/Hostname<br> (**REQUIRED**)
+      path: {{ isecl_nfs_server_dir }}  # The path for storing persistent data on NFS
+
+  service:
+    ta: 31443 # The service port for Trust Agent
+
+  aas:
+    secret:
+      adminUsername: {{ isecl_users_aas_admin_username }} # Admin Username for AAS
+      adminPassword: {{ isecl_users_aas_admin_password }} # Admin Password for AAS
+
+  ihub:
+    secret:
+      serviceUsername: {{ isecl_ihub_service_username }} # Admin Username for IHub
+      servicePassword: {{ isecl_ihub_service_password }} # Admin Password for IHub
+
+  proxyEnabled: true # Set to true when running deploying behind corporate proxy
+{% if "http_proxy" in proxy_env and proxy_env["http_proxy"] | length %}
+  httpProxy: {{ proxy_env["http_proxy"] }} # Set http_proxy url
+{% endif %}
+{% if "https_proxy" in proxy_env and proxy_env["https_proxy"] | length %}
+  httpsProxy: {{ proxy_env["https_proxy"] }} # Set https_proxy url
+{% endif %}
+{% if "all_proxy" in proxy_env and proxy_env["all_proxy"] | length %}
+  allProxy: {{ proxy_env["all_proxy"] }} # Set all_proxy url
+{% endif %}
+{% if "no_proxy" in proxy_env and proxy_env["no_proxy"] | length %}
+  noProxy: {{ proxy_env["no_proxy"] }} # Set no_proxy
+{% endif %}

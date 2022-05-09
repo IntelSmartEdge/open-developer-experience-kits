@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+- name: check if node-exporter is already installed
+  shell: set -o pipefail && kubectl get pods -n {{ telemetry_namespace }} | grep node-exporter
+  register: query
+  changed_when: false
+  failed_when: false
+
+- name: install node-exporter
+  include_tasks: install_node_exporter.yml
+  when: query.rc != 0

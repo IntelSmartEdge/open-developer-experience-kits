@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+# Common values
+namespace: telemetry
+pullPolicy: IfNotPresent
+component: "{{ telemetry_namespace }}"
+projectDir: "{{ project_dir }}"
+telegraf:
+  interval: "{{ (telemetry_prometheus_scrape_interval_seconds/2) | round(0,'floor') | int }}s"
+  name: telegraf
+  image: "{{ _image_repo_path }}"
+  tag: "{{ _image_tag }}"
+  # port for prometheus to scrape metrics
+  port: "{{ telemetry_telegraf_port }}"
+  configMap: telegraf-config
+
+certs:
+  certsDest: /opt/telegraf/certs
+  secretName: "{{ _cert_secret_name }}"
+  serverName: "{{ _cert_server_name }}"
+  ciphers: '["TLS_RSA_WITH_AES_256_GCM_SHA384","TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384","TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384"]'
+  tls_min: TLS12
+  tls_max: TLS13
+
+sm:
+  secretName: "{{ telemetry_prometheus_tls_secret_name }}"

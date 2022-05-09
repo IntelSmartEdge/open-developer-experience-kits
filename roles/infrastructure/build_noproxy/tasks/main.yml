@@ -12,10 +12,10 @@
     _base_noproxy: "{{ _base_noproxy + ',' + calico_cidr }}"
   when: '"calico" in kubernetes_cnis'
 
-- name: Adding ovn4nfv CIDR to noproxy
+- name: Adding nodus CIDR to noproxy
   set_fact:
-    _base_noproxy: "{{ _base_noproxy + ',' + ovn4nfv_cidr }}"
-  when: '"ovn4nfv" in kubernetes_cnis'
+    _base_noproxy: "{{ _base_noproxy + ',' + nodus_cidr }}"
+  when: '"nodus" in kubernetes_cnis'
 
 - name: Adding istio_noproxy to noproxy
   set_fact:
@@ -34,7 +34,7 @@
 - name: Adding docker_registry_mirrors to noproxy
   set_fact:
     _base_noproxy: "{{ _base_noproxy + ',' + (item | urlsplit('hostname') | string) }}"
-  with_items: "{{ docker_registry_mirrors }}"
+  loop: "{{ docker_registry_mirrors }}"
   when: docker_registry_mirrors is defined
 
 - name: Adding base noproxy setting to user defined ones

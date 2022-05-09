@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  type: NodePort
+  ports:
+  - name: https
+    targetPort: apphsm-rproxy
+    port: {{ .Values.apphsm.rproxy.port }}
+    nodePort: {{ .Values.apphsm.main.port }}
+    protocol: TCP
+  selector:
+    app: {{ .Release.Name }}

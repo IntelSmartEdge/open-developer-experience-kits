@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+- name: Create temporary directory
+  tempfile:
+    state: directory
+    suffix: monitors
+  register: tmp_dir
+
+- name: Add kubevirt monitor
+  block:
+    - name: template kubevirt monitor to temp_dir
+      template:
+        src: kubevirt_sm.yml.j2
+        dest: "{{ tmp_dir.path }}/kubevirt_sm.yaml"
+        mode: u+rw
+    - name: apply kubevirt monitor
+      command: kubectl apply -f "{{ tmp_dir.path }}/kubevirt_sm.yaml"
+      changed_when: true
+  when: kubevirt_enable | default(False)

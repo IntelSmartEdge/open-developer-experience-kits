@@ -17,5 +17,5 @@
   - name: Check PCCS user token
     fail:
       msg: PCCS user token not set!
-    when: pccs_user_token is not defined or pccs_user_token | length == 0
+    when: pccs_user_password is not defined or pccs_user_password | length == 0
   when: sgx_enabled | default(False)

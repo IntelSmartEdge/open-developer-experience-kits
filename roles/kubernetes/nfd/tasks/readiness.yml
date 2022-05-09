@@ -1,35 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
 
 - name: load nfd vars
   include_vars: ../defaults/main.yml
 
-- block:
-    - name: check nfd controlplane deployment
-      check_k8s_object:
-        name: "{{ _nfd_release_name }}-node-feature-discovery-master"
-        namespace: "{{ system_namespace }}"
-        kind: deployment
+- name: check nfd controlplane deployment
+  check_k8s_object:
+    name: "{{ _nfd_release_name }}-node-feature-discovery-master"
+    namespace: "{{ system_namespace }}"
+    kind: deployment
 
-    - name: check nfd daemonset workers
-      check_k8s_object:
-        name: "{{ _nfd_release_name }}-node-feature-discovery-worker"
-        namespace: "{{ system_namespace }}"
-        kind: daemonset
-  when: not sgx_enabled or ansible_os_family == "RedHat"
-
-- block:
-    - name: check nfd controlplane deployment
-      check_k8s_object:
-        name: "nfd-master"
-        namespace: "node-feature-discovery"
-        kind: deployment
-
-    - name: check nfd daemonset workers
-      check_k8s_object:
-        name: "nfd-worker"
-        namespace: "node-feature-discovery"
-        kind: daemonset
-  when: sgx_enabled and ansible_os_family == "Debian"
+- name: check nfd daemonset workers
+  check_k8s_object:
+    name: "{{ _nfd_release_name }}-node-feature-discovery-worker"
+    namespace: "{{ system_namespace }}"
+    kind: daemonset

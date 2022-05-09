@@ -27,10 +27,10 @@ spec:
   vlanQoS: {{ item.vlan_qos }}
 {% endif %}
 {% if item.trust_vf is defined %}
-  trust: {{ item.trust_vf }}
+  trust: "{{ item.trust_vf }}"
 {% endif %}
 {% if item.capabilities is defined %}
-  capabilities: {{ item.capabilities }}
+  capabilities: "{{ item.capabilities }}"
 {% endif %}
 {% if item.spoofChk is defined %}
   spoofChk: "{{ item.spoofChk }}"

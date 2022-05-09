@@ -15,23 +15,44 @@
     regexp: "(APT::Periodic::.* )\"1\";$"
     replace: "\\1\"0\";"
     mode: a=,u=rw
-  with_items:
+  loop:
     - "/etc/apt/apt.conf.d/20auto-upgrades"
     - "/etc/apt/apt.conf.d/10periodic"
 
-- name: ensure that main, restricted, universe and multiverse repositories are enabled
+# The machine time is sometimes not set immediately after a restart of the ntp service
+#  and this causes problems with the apt lock file. This task will make sure that the lock is released.
+- name: wait for updates running currently in the background
   become: yes
-  apt_repository:
-    repo: "{{ item }}"
-  with_items:
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main universe"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main restricted"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates main restricted"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates universe"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates multiverse"
-    - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-backports main restricted universe multiverse"
-    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security main restricted"
-    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security universe"
-    - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security multiverse"
+  command: systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
+  changed_when: false
+
+- name: ensure that main, restricted, universe and multiverse repositories are enabled
+  # Block was added as a solution to a problem with incorrectly added packages/repositories on an installed machine. 
+  # The error message is very unreadable, an update apt cache call is added to illustrate the problem better.
+  block:
+  - name: add repository
+    become: yes
+    apt_repository:
+      repo: "{{ item }}"
+    loop:
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main universe"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} main restricted"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates main restricted"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} universe"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates universe"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }} multiverse"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-updates multiverse"
+      - "deb http://archive.ubuntu.com/ubuntu {{ ansible_distribution_release }}-backports main restricted universe multiverse"
+      - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security main restricted"
+      - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security universe"
+      - "deb http://security.ubuntu.com/ubuntu {{ ansible_distribution_release }}-security multiverse"
+  rescue:
+  - name: run apt update
+    apt:
+      update_cache: yes
+    register: error_output
+    become: yes
+
+  - name: fail run apt update
+    fail:
+      msg: "{{ error_output }}"

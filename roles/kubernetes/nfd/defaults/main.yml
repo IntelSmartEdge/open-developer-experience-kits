@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019-2020 Intel Corporation
+# Copyright (c) 2019-2022 Intel Corporation
 
 ---
 _nfd_image_name: "k8s.gcr.io/nfd/node-feature-discovery"
-_nfd_tag: "v0.9.0"
+_nfd_tag: "v0.10.1"
 
 _nfd_chart_dir: "{{ ne_helm_charts_default_dir }}/node-feature-discovery"
 _nfd_chart_url:

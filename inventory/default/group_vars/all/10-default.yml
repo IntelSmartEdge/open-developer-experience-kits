@@ -111,11 +111,29 @@ project_dir: "/opt/smartedge"
 # SmartEdge users group
 project_group: "{{ ansible_user }}"
 
+# Rook ceph settings
+rook_ceph_enabled: false
+rook_ceph_namespace: "rook-ceph"
+
+rook_ceph:
+  mon_count: 1
+  host_name: "{{ hostvars[groups['controller_group'][0]]['ansible_nodename'] }}"
+  osds_per_device: "1"
+  replica_pool_size: 1
+
+# Kube-virt settings
+kubevirt_enable: false
+kubevirt_namespace: "kubevirt"
+cdi_namespace: "cdi"
+
 ## SR-IOV Network Operator
 sriov_network_operator_enable: true
 
 ## SR-IOV Network Operator configuration
 sriov_network_operator_configure_enable: true
+
+## SR-IOV Network Nic's Detection Application
+sriov_network_detection_application_enable: false
 
 # Nic names for the SR-IOV Network Operator
 cvl_sriov_nics:
@@ -179,7 +197,7 @@ sriov_networks:
     vlan: 0
     resource_name: sriov_netdev_net_c0p0
     link_state: enable
-  - name:  sriov-netdev-network-c1p0
+  - name: sriov-netdev-network-c1p0
     network_namespace: "{{ application_namespace }}"
     ipam: |-
       {
@@ -211,25 +229,6 @@ sriov_networks:
 ## Enable OOT driver update for E810
 e810_driver_enable: True
 
-### Software Guard Extensions
-# SGX requires kernel 5.11+, SGX enabled in BIOS and access to PCC service
-sgx_enabled: "{{ false if ansible_product_name == 'MOROCITY' else true }}"
-
-## Install HWE Kernel for SGX
-install_hwe_kernel_enable: true
-
-# PCCS server IP address
-sgx_pccs_ip: ""
-
-# PCCS server port address
-sgx_pccs_port: "32666"
-
-# To accept insecure HTTPS cert, set this option to FALSE
-sgx_use_secure_cert: false
-
-# Provide a token to access PCCS
-pccs_user_token: ""
-
 ### Kubernetes Topology Manager configuration (for worker)
 # CPU settings
 cpu:
@@ -251,31 +250,39 @@ ne_helm_charts_default_dir: "{{ project_dir }}/helm-charts"
 ###############
 ## Telemetry
 
+telemetry_enable: true
 # Telemetry flavor - possible values: common (default), flexran, smartcity, corenetwork
 telemetry_flavor: common
 
 # Telemetry namespace
 telemetry_namespace: telemetry
-
+# Node Exporter
+telemetry_node_exporter_port: 9100
 # Grafana
 telemetry_grafana_enable: true
 
 # Prometheus
-telemetry_prometheus_enable: true
 telemetry_prometheus_scrape_interval_seconds: 60
 telemetry_prometheus_retention: 15d
+# A list of RemoteWriteSpec objects
+# https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#remotewritespec
+telemetry_prometheus_remote_write_targets: []
+telemetry_prometheus_nodeport: 30000
+# To expose the Prometheus on NodeIP, set this variable to True
+telemetry_prometheus_nodeport_expose: false
+telemetry_prometheus_tls_secret_name: prometheus-tls
 
 # Prometheus-statsd-exporter
 telemetry_statsd_exporter_enable: true
 telemetry_statsd_exporter_udp_port: 8125
 telemetry_statsd_exporter_tcp_port: 8125
 
-# Collectd
-telemetry_collectd_enable: true
-telemetry_collectd_log_level: "WARNING" # One of: INFO,WARNING,ERROR. Lower log_level will result in increased disk usage
 # CAdvisor
 telemetry_cadvisor_enable: true
 
+# Telegraf
+telemetry_telegraf_enable: true
+telemetry_telegraf_port: 9105
 ###############
 
 ## Docker registry mirrors
@@ -311,7 +318,7 @@ harbor_timeout_min: 5
 platform_attestation_node: "{{ false if ansible_product_name == 'MOROCITY' else true }}"
 
 # CMS hash from Intel-secl controller. Use following command:
-# kubectl exec -n isecl --stdin "$(kubectl get pod -n isecl -l app=cms -o jsonpath="{.items[0].metadata.name}")" -- cms tlscertsha384
+# kubectl get secrets/cms-tls-cert-sha384 -n isecl --template={{.data.CMS_TLS_CERT_SHA384}} | base64 -d
 isecl_cms_tls_hash: ""
 
 # Host on which NFS server is setup. If left empty, NFS server will be installed on kubernetes controller
@@ -322,6 +329,25 @@ isecl_nfs_server_clients: []
 
 # Host IP of node hosting isecl controlplane(core) services. This could be hosted on cloud as well.
 isecl_control_plane_ip: ""
+
+# Host IP of node hosting KMRA AppHSM service
+kmra_apphsm_ip: ""
+
+### Software Guard Extensions
+# SGX requires kernel 5.11+, SGX enabled in BIOS and access to PCC service
+sgx_enabled: "{{ false if ansible_product_name == 'MOROCITY' else true }}"
+
+## Install HWE Kernel for SGX
+install_hwe_kernel_enable: true
+
+# PCCS server IP address
+sgx_pccs_ip: ""
+
+# PCCS server port address
+sgx_pccs_port: "32666"
+
+# To accept insecure HTTPS cert, set this option to FALSE
+sgx_use_secure_cert: false
 
 ###############
 ## PCCS for SGX
@@ -337,3 +363,10 @@ pccs_admin_password: ""
 
 # NodePort to access PCCS from outside of cluster
 # pccs_access_port: 32666
+
+# Enable userspace drivers installation
+install_userspace_drivers_enable: false
+
+# SRIOV-FEC operator
+sriov_fec_operator_enable: false
+sriov_fec_operator_configure_enable: false

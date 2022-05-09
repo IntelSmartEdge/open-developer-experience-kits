@@ -1,0 +1,64 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+---
+- name: create certificates for Statsd-exporter
+  include_role:
+    name: kubernetes/certs
+  vars:
+    tls_secret_name: "{{ _proxy_secret_name }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: ["statsd-exporter"]
+
+- name: download the helm-chart
+  command:
+    argv:
+      - helm
+      - pull
+      - --repo
+      - "{{ _statsd_helm_repo.url }}"
+      - --version
+      - "{{ _statsd_helm_repo.version }}"
+      - "{{ _statsd_helm_repo.name }}"
+      - --untar
+      - --untardir
+      - "{{ ne_helm_charts_default_dir }}"
+    creates: "{{ helm_dir_path }}"
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+
+- name: template values files to helm directory
+  template:
+    src: values.yml.j2
+    dest: "{{ helm_dir_path }}/overwrite_values.yaml"
+    mode: u+rw
+
+- name: copy helm templates
+  copy:
+    src: "{{ item }}"
+    dest: "{{ helm_dir_path }}/templates/{{ item }}"
+    mode: u+rw
+    force: yes
+  loop:
+    - proxy_configmap.yaml
+    - service_monitor.yaml
+    - service.yaml
+
+- name: template prometheus-statsd-exporter helm charts
+  shell: "set -o pipefail &&  helm template -f overwrite_values.yaml -n {{ telemetry_namespace }} --no-hooks  statsd-exporter . > all.yaml"
+  args:
+    creates: "{{ helm_dir_path }}/all.yaml"
+    chdir: "{{ helm_dir_path }}"
+
+- name: template kustomization file
+  template:
+    src: "kustomization.yml.j2"
+    dest: "{{ helm_dir_path }}/kustomization.yaml"
+    mode: u+rw
+
+- name: Kustomize and apply templated file
+  command: kubectl apply -k .
+  args:
+    chdir: "{{ helm_dir_path }}"
+  changed_when: true

@@ -19,11 +19,11 @@
     - role: infrastructure/check_redeployment
     - role: baseline_ansible/infrastructure/time_verify_ntp
       reference_host: "{{ groups['controller_group'][0] }}"
-      when: "'edgenode_group' in group_names"
+      when: "'edgenode_group' in group_names and not (ptp_sync_enable | default(False))"
     - role: baseline_ansible/infrastructure/install_rt_package
       when: kernel_rt_enable | default(False)
     - role: baseline_ansible/infrastructure/install_tuned_rt_profile
-      when: tuned_enable | default(False)     
+      when: tuned_enable | default(False)
     - role: infrastructure/install_hwe_kernel
     - role: baseline_ansible/infrastructure/configure_sriov_kernel_flags
       when: "iommu_enabled | default(True)"
@@ -39,6 +39,8 @@
     - role: infrastructure/conditional_reboot
     - role: infrastructure/e810_driver_update
       when: e810_driver_enable | default(False)
+    - role: baseline_ansible/infrastructure/install_userspace_drivers
+      when: install_userspace_drivers_enable | default(False)
 
     - role: infrastructure/provision_sgx_enabled_platform
       when: sgx_enabled | default(False)
@@ -50,3 +52,18 @@
       golang_additional_exports:
         - "export GOPRIVATE=github.com/smart-edge-open"
     - role: infrastructure/docker
+
+- hosts: controller_group
+  any_errors_fatal: true
+  roles:
+    - role: infrastructure/ptp/controlplane
+      when: ptp_sync_enable | default(False)
+
+- hosts: edgenode_group
+  any_errors_fatal: true
+  roles:
+    - role: infrastructure/ptp/node
+      when: ptp_sync_enable | default(False)
+    - role: baseline_ansible/infrastructure/time_verify_ntp
+      reference_host: "{{ groups['controller_group'][0] }}"
+      when: ptp_sync_enable | default(False)

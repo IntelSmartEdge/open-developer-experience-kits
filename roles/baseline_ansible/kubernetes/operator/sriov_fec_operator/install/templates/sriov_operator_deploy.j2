@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ sriov_fec_operator_namespace }}
+  name: operator-configuration
+data:
+  isGeneric: "true"
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: intel-operators
+  namespace: {{ sriov_fec_operator_namespace }}
+spec:
+  sourceType: grpc
+  image: {{ operator_registry_ip }}:{{ operator_registry_port }}/intel/n3000-operators-index:{{ sriov_operator_version }}
+  publisher: Intel
+  displayName: SRIOV-FEC operator
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: vran-operators
+  namespace: {{ sriov_fec_operator_namespace }}
+spec:
+  targetNamespaces:
+    - {{ sriov_fec_operator_namespace }}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: sriov-fec-subscription
+  namespace: {{ sriov_fec_operator_namespace }}
+spec:
+  channel: stable
+  name: sriov-fec
+  source: intel-operators
+  sourceNamespace: {{ sriov_fec_operator_namespace }}

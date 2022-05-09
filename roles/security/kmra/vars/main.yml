@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+---
+
+_kmra_image_repo: "docker.io"
+_kmra_image_name: "intel/apphsm"
+_kmra_image_tag: "v2.1"
+
+kmra_apphsm_use_secure_cert: false
+
+_kmra_charts_repo: https://github.com/intel/container-experience-kits
+_kmra_charts_branch: v22.01
+
+_kmra_raw_url: https://raw.githubusercontent.com/intel/container-experience-kits
+
+_kmra_chart_dir: "{{ ne_helm_charts_default_dir }}/kmra"
+
+kmra_app_hsm_port: "30500"

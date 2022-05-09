@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020 Intel Corporation
+
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  namespace: {{ telemetry_namespace }}
+  name: "{{ _pv_name }}"
+spec:
+  storageClassName: prometheus
+  capacity:
+    storage: 10Gi
+  persistentVolumeReclaimPolicy: Recycle
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "{{ _pv_dir }}/{{ _pv_name }}"

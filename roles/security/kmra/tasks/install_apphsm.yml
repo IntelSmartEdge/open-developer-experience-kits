@@ -1,0 +1,42 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+---
+- name: Include vars from kmra_vars.yml
+  include_vars: kmra_vars.yml
+
+- name: Create {{ kmra_namespace }} namespace if doesn't exist
+  include_role:
+    name: baseline_ansible/kubernetes/custom_namespace
+  vars:
+    - _custom_ns: ["{{ kmra_namespace }}"]
+
+- name: Create k8s secrets for apphsm
+  include: create_tls_secrets.yml
+  vars:
+    kmra_apps:
+      - { name: "{{ kmra_apphsm_release_name }}", subj: "{{ kmra_apphsm_crt_subj }}", deploy: true }
+
+- name: Populate and generate values.yaml
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    force: true
+    mode: preserve
+  loop:
+    - {
+        src: 'kmra-apphsm-values.yaml.j2',
+        dest: "{{ _kmra_chart_dir }}/kmra-apphsm/kmra-apphsm-values.yml",
+        deploy: true
+      }
+    - {
+        src: "{{ kmra_chart_path }}/container-experience-kits/roles/kmra_install/templates/kmra-apphsm-rbac-cluster-role.yml.j2",
+        dest: "{{ _kmra_chart_dir }}/kmra-apphsm/templates/kmra-apphsm-rbac-cluster-role.yml",
+        deploy: true
+      }
+  when:
+    - item.deploy
+  delegate_to: "{{ groups['controller_group'][0] }}"
+
+- name: Install appHSM
+  command: helm upgrade -i {{ kmra_apphsm_release_name }} --namespace={{ kmra_namespace }} -f "{{ _kmra_chart_dir }}/kmra-apphsm/kmra-apphsm-values.yml" "{{ _kmra_chart_dir }}/kmra-apphsm"
+  changed_when: true

@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+
+---
+- name: create certificates for grafana
+  include_role:
+    name: kubernetes/certs
+  vars:
+    tls_secret_name: "{{ _proxy_secret_name }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: ["grafana"]
+
+- name: create directories for persistent volumes
+  file:
+    path: "{{ _pv_dir }}/{{ _pv_name }}"
+    state: directory
+    mode: a=rx,u+w
+  become: yes
+
+- name: pull helm charts
+  command:
+    argv:
+      - helm
+      - pull
+      - --repo
+      - "{{ _grafana_helm_repo.url }}"
+      - --version
+      - "{{ _grafana_helm_repo.version }}"
+      - "{{ _grafana_helm_repo.name }}"
+      - --untar
+      - --untardir
+      - "{{ ne_helm_charts_default_dir }}"
+    creates: "{{ _grafana_chart_dir }}"
+
+- name: copy files to chart templates
+  copy:
+    remote_src: false
+    src: "{{ item }}"
+    dest: "{{ _grafana_chart_dir }}/templates/{{ item }}"
+    mode: u+rw
+  loop:
+    - volume.yaml
+    - server-proxy-configmap.yaml
+    - example-dashboard.yaml
+
+- name: store generated certificates in variables for later use
+  block:
+    - name: store root CA cert
+      shell: set -o pipefail && kubectl get secrets/{{ _proxy_secret_name }} -n telemetry -o json | jq -r '.data."ca.crt"' | base64 -d
+      register: telemetry_root_ca_cert
+    - name: store grafana cert
+      shell: set -o pipefail && kubectl get secrets/{{ _proxy_secret_name }} -n telemetry -o json | jq -r '.data."tls.crt"' | base64 -d
+      register: telemetry_grafana_cert
+    - name: store grafana key
+      shell: set -o pipefail && kubectl get secrets/{{ _proxy_secret_name }} -n telemetry -o json | jq -r '.data."tls.key"' | base64 -d
+      register: telemetry_grafana_key
+
+- name: template values file
+  template:
+    src: values.yml.j2
+    lstrip_blocks: yes
+    trim_blocks: yes
+    dest: "{{ _grafana_chart_dir }}/overwrite_values.yaml"
+    mode: u+rw
+    force: yes
+
+- name: open port for Grafana
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports: "{{ grafana_open_ports }}"
+
+- name: install Grafana chart
+  command:
+    argv:
+      - helm
+      - install
+      - -f
+      - "{{ _grafana_chart_dir }}/overwrite_values.yaml"
+      - --namespace
+      - "{{ telemetry_namespace }}"
+      - "{{ _grafana_release_name }}"
+      - "{{ _grafana_chart_dir }}"
+  changed_when: true
+
+- name: wait for Grafana
+  block:
+    - name: wait for Grafana pod to be ready
+      command: >
+        kubectl wait --selector=app.kubernetes.io/instance=grafana --namespace={{ telemetry_namespace }}
+        --for=condition=Ready pods --timeout={{ _grafana_timeout }}
+      changed_when: false
+  rescue:
+    - name: get grafana pod name
+      command: kubectl get pod --selector=app.kubernetes.io/instance=grafana --namespace={{ telemetry_namespace }} --output=name
+      register: grafana_pod_name
+      changed_when: false
+    - name: get grafana pod summary
+      command: kubectl get --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }}
+      changed_when: false
+      failed_when: false
+    - name: describe grafana pod
+      command: kubectl describe --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }}
+      changed_when: false
+      failed_when: false
+    - name: get containers in grafana pod
+      command: kubectl get --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }} -o jsonpath='{.spec.initContainers[*].name}{" "}{.spec.containers[*].name}'
+      changed_when: false
+      failed_when: false
+      register: grafana_pod_containers
+    - name: get grafana containers' logs
+      command: kubectl logs --namespace={{ telemetry_namespace }} {{ grafana_pod_name.stdout }} {{ item }}
+      changed_when: false
+      failed_when: false
+      loop: "{{ grafana_pod_containers.stdout.split(' ') }}"
+    - name: end the playbook
+      fail:
+        msg: "wait for grafana failed"

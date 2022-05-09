@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 [[source]]
 url = "https://pypi.python.org/simple"
@@ -7,10 +7,9 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-ansible = "==2.9.20"
+ansible = "==2.9.27"
 ansible-lint = "==5.0.8"
-bandit = "== 1.7.0"
-jinja2 = "==2.11.3"
+jinja2 = "==3.0.3"
 pylint = "==2.7.2"
 netaddr = "==0.7.18"
 sh = "==1.14.1"

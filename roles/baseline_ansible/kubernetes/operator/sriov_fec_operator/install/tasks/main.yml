@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+- name: prepare SRIOV-FEC Operator repository
+  include_tasks: prepare_repo.yml
+
+- name: provision and build SRIOV-FEC Operator with Operator Framework tools
+  include_tasks: provision_sriov_fec_operator.yml
+
+- name: deploy SRIOV-FEC Operator
+  include_tasks: deploy_sriov_fec_operator.yml

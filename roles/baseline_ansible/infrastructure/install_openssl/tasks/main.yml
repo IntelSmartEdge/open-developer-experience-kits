@@ -90,7 +90,7 @@
         dest: "/etc/ld.so.conf.d/localuser.conf"
         line: "{{ item }}"
         mode: a=r,u+w
-      with_items:
+      loop:
         - "/usr/local/lib"
         - "/usr/local/lib64"
 

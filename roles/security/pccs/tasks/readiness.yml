@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+
+- name: load pccs default vars
+  include_vars: ../defaults/main.yml
+
+- name: check pccs deployment
+  check_k8s_object:
+    name: "{{ _pccs_release_name }}"
+    namespace: "{{ _pccs_namespace }}"
+    kind: deployment

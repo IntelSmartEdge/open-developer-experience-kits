@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+
+---
+ - name: create temp directory for sriov detect
+   tempfile:
+     state: directory
+     prefix: sriov-detect-
+   register: sriov_detect_dir
+   
+ - name: Copy the detect SR-IOV GO file to the remote OS with owner and permissions
+   copy:
+     src: "{{ role_path }}/files/sriov_detection.go"
+     dest: "{{ sriov_detect_dir.path }}"
+     owner: "{{ project_user }}"
+     group: "{{ project_user }}"
+     mode: a=rx,u+w 
+          
+ - name: Prepare the GoLang environment  
+   command: "{{ item }}"
+   args:
+     chdir: "{{ sriov_detect_dir.path }}"
+   with_items:
+    - go mod init github.com/jaypipes
+    - go mod tidy
+   environment:
+     PATH: /usr/local/go/bin:{{ ansible_env.PATH }}
+   changed_when: false   
+    
+ - name: Run sr-iov detection application
+   command: go run sriov_detection.go {{ hostvars[inventory_hostname].deployment }} debug_mode
+   args:
+     chdir: "{{ sriov_detect_dir.path }}" 
+   register: sriov_detection_output
+   environment:
+     PATH: /usr/local/go/bin:{{ ansible_env.PATH }}
+   changed_when: false   
+        
+ - name: Set Debian and RedHat SR-IOV interfaces vars from 10-default.yml
+   set_fact:
+     cvl_sriov_nics:
+       Debian:
+         c0p0: "{{ sriov_detection_output.stdout_lines[0] }}"
+         c0p1: "{{ sriov_detection_output.stdout_lines[1] }}"
+         c1p0: "{{ sriov_detection_output.stdout_lines[2] }}"
+         c1p1: "{{ sriov_detection_output.stdout_lines[3] }}" 
+       RedHat:
+         c0p0: "{{ sriov_detection_output.stdout_lines[0] }}"
+         c0p1: "{{ sriov_detection_output.stdout_lines[1] }}"
+         c1p0: "{{ sriov_detection_output.stdout_lines[2] }}"
+         c1p1: "{{ sriov_detection_output.stdout_lines[3] }}"                              

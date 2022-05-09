@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+
+- name: verify rook-ceph deployments
+  check_k8s_object:
+    name: "{{ item }}"
+    namespace: "{{ rook_ceph_namespace }}"
+    kind: deployment
+  loop:
+  - csi-cephfsplugin-provisioner
+  - csi-rbdplugin-provisioner
+  - rook-ceph-mgr-a
+  - rook-ceph-mon-a
+  - rook-ceph-operator
+  - rook-ceph-osd-0
+  - rook-ceph-tools
+
+
+- name: verify rook-ceph daemonsets
+  check_k8s_object:
+    name: "{{ item }}"
+    namespace: "{{ rook_ceph_namespace }}"
+    kind: daemonset
+  loop:
+  - csi-cephfsplugin
+  - csi-rbdplugin

@@ -1,42 +1,52 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 ---
-- name: Create temporary directory for cert-manager installation
+
+- name: create temporary directory for cert-manager installation
   tempfile:
     state: directory
     prefix: cert-manager
   register: temp_dir
 
-- name: Add cert-manager helm charts
-  command: helm repo add {{ _cert_manager_chart }}
-  changed_when: false
-
-- name: Update helm repo
-  command: helm repo update
-  changed_when: false
-
-- name: template values yaml
+- name: template values.yaml
   template:
     src: "values.yaml.j2"
     dest: "{{ temp_dir.path }}/values.yaml"
     mode: u+rw
 
-- name: Execute helm install command
-  command: helm install cert-manager jetstack/cert-manager \
-    --namespace {{ _cert_manager_namespace }} \
-    --create-namespace \
-    --version {{ _cert_manager_version }} \
-    --set installCRDs=true \
-    -f {{ temp_dir.path }}/values.yaml
+# Due to issues with downloading chart from cert manager chart repository
+# retries were added to prevent task from failing
+- name: execute helm install command
+  command:
+    argv:
+      - helm
+      - install
+      - --repo
+      - "{{ _cert_manager_chart_repo_url }}"
+      - --namespace
+      - "{{ _cert_manager_namespace }}"
+      - --create-namespace
+      - --version
+      - "{{ _cert_manager_version }}"
+      - --set
+      - installCRDs=true
+      - -f
+      - "{{ temp_dir.path }}/values.yaml"
+      - "{{ _cert_manager_release_name }}"
+      - "{{ _cert_manager_chart }}"
   changed_when: true
+  register: result
+  retries: "{{ number_of_retries | default(10) }}"
+  until: result is succeeded
+  delay: "{{ retry_delay | default(5) }}"
 
-- name: Check if CA secret exists
+- name: check if CA secret exists
   command: kubectl get secret root-ca --namespace={{ _cert_manager_namespace }}
   failed_when: false
   changed_when: false
   register: rootca_query
 
-- name: Create CA secret if it doesn't exists
+- name: create CA secret if it doesn't exists
   block:
     - name: create root CA certificate
       command: "{{ project_dir }}/scripts/tls_pair.sh {{ _subject }} {{ temp_dir.path }}"
@@ -48,17 +58,17 @@
         --namespace={{ _cert_manager_namespace }}
   when: rootca_query.rc != 0
 
-- name: Template ClusterIssuer manifest
+- name: template ClusterIssuer manifest
   template:
     src: "issuer.yaml.j2"
     dest: "{{ temp_dir.path }}/issuer.yaml"
     mode: u+rw
 
-- name: Apply ClusterIssuer manifest
+- name: apply ClusterIssuer manifest
   command: "kubectl apply -f {{ temp_dir.path }}/issuer.yaml"
   changed_when: true
 
-- name: Remove temporary folder
+- name: remove temporary folder
   file:
     path: "{{ temp_dir.path }}"
     state: absent

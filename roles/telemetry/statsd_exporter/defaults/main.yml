@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+_statsd_helm_repo:
+  version: "0.4.2"
+  url: https://prometheus-community.github.io/helm-charts
+  name: prometheus-statsd-exporter
+
+helm_dir_path: "{{ ne_helm_charts_default_dir }}/prometheus-statsd-exporter"
+
+_statsd_fullname_override: "prometheus-statsd-exporter"
+
+_statsd_exporter_files:
+  - "deployment.yaml"
+  - "proxy_configmap.yaml"
+  - "service.yaml"
+
+_proxy_server_name: statsd-exporter
+_proxy_secret_name: statsd-exporter-tls
+_proxy_cm_name: statsd-proxy-cm
+
+_proxy_container:
+  name: statsd-exporter-proxy
+  tag: 1.20-alpine
+  image: nginxinc/nginx-unprivileged
+  path_to_nginx_conf: /etc/nginx/nginx.conf
+  internal_statsd_port: 9120
+  metrics_statsd_port: 9103
+  config_map: statsd-exporter-proxy-cm
+  certs_dest: /opt/statsd/certs

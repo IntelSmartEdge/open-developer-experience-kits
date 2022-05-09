@@ -5,4 +5,4 @@
 
 - name: Create custom namespaces
   include_tasks: create_ns.yml
-  with_items: "{{ _custom_ns }}"
+  loop: "{{ _custom_ns }}"

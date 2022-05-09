@@ -3,38 +3,22 @@
 
 """ Git utilities """
 
-import logging
 import urllib
 
-import seo.error
 
+def apply_credentials(url, username, password):
+    """Return the provided url with the user:password part replaced with the given username and password"""
 
-def apply_token(url, token):
-    """Return the provided url with the user:password part replaced with the given token string"""
+    p = urllib.parse.urlparse(url)
 
-    parsed = urllib.parse.urlparse(url)
+    netloc = p.netloc.split('@')[-1]
 
-    if parsed.hostname is None:
-        logging.debug(
-            "The url ('%s') doesn't contain recognizable host name part (maybe it is missing the schema part?)."
-            " The token won't be applied", url)
-
-        return url
-
-    try:
-        port = parsed.port
-    except ValueError as e:
-        raise seo.error.AppException(
-            seo.error.Codes.CONFIG_ERROR,
-            f"The url ('{url}') contains invalid port number") from e
-
-    if not token and port is None:
-        netloc = parsed.hostname
-    elif not token:
-        netloc = f"{parsed.hostname}:{port}"
-    elif port is None:
-        netloc = f"{token}@{parsed.hostname}"
+    if username and password:
+        c = f"{username}:{password}"
     else:
-        netloc = f"{token}@{parsed.hostname}:{port}"
+        c = f"{username or ''}{password or ''}"
 
-    return parsed._replace(netloc=netloc).geturl()
+    if c:
+        p = p._replace(netloc=f"{c}@{netloc}")
+
+    return p.geturl()

@@ -2,10 +2,24 @@
 # Copyright (c) 2021 Intel Corporation
 ---
 isecl_k8s_extensions: "{{ project_dir }}/isecl-k8s-extensions"
-isecl_users_install_admin_username: admin # INSTALL_ADMIN_USERNAME
-isecl_users_install_admin_password: adminPass # INSTALL_ADMIN_PASSWORD
+isecl_users_super_admin_username: super_admin_user # INSTALL_ADMIN_USERNAME
+isecl_users_super_admin_password: superAdminPass # INSTALL_ADMIN_PASSWORD
 isecl_users_global_admin_username: global_admin_user # GLOBAL_ADMIN_USERNAME
 isecl_users_global_admin_password: globalAdminPass # GLOBAL_ADMIN_PASSWORD
+
+isecl_users_aas_admin_username: aas_admin_user
+isecl_users_aas_admin_password: aasAdminPass
+isecl_aas_db_username: aas_db_user
+isecl_aas_db_password: aasDbPass
+
+isecl_users_hvs_admin_username: hvs_admin_user
+isecl_users_hvs_admin_password: hvsAdminPass
+isecl_hvs_db_username: hvs_db_user
+isecl_hvs_db_password: hvsDbPass
+
+isecl_ihub_service_username: ihub_admin_user
+isecl_ihub_service_password: ihubAdminPass
+
 isecl_users_custom_claims_admin_username: nats_admin # CCC_ADMIN_USERNAME
 isecl_users_custom_claims_admin_password: natsAdminPass # CCC_ADMIN_PASSWORD
-isecl_cms_tls_hash: ""
+#isecl_cms_tls_hash: ""

@@ -8,8 +8,10 @@ matchLabels:
 
 container:
   name: pccs
+  image_repo: {{ _pccs_image_repo }}
   image: {{ _pccs_image_name }}
   tag: {{ _pccs_image_tag }}
+  imagePullPolicy: IfNotPresent
   certs:
     volumeName: pccs-certs
     certSecretName: {{ _pcss_certificate_secret_name }}
@@ -18,6 +20,20 @@ container:
   config:
     dest: /opt/intel/pccs/config/default.json
     filename: default.json
+
+initContainer:
+  name: init-db-vol
+  image: busybox
+  tag: 1.32
+  imagePullPolicy: IfNotPresent
+
+pckCacheVolume:
+  name: pckcache-vol
+  mountPath: /tmp
+  hostPath: /var/lib/pccs
+
+securityContext:
+  runAsUser: 65333
 
 secret:
   name: pccs-pass

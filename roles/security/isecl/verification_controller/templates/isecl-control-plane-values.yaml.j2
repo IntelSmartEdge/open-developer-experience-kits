@@ -1,0 +1,101 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+# The below section can be used to override additional values defined under each of the dependent charts
+cms:
+  image:
+    name: isecl/cms # Certificate Management Service image name<br> (**REQUIRED**)
+
+aas:
+  image:
+    name: isecl/authservice # Authentication & Authorization Service image name<br> (**REQUIRED**)
+  secret:
+    dbUsername: {{ isecl_aas_db_username }} # DB Username for AAS DB
+    dbPassword: {{ isecl_aas_db_password }} # DB Password for AAS DB
+
+aas-manager:
+  image:
+    name: isecl/aas-manager # Authentication & Authorization Manager image name<br> (**REQUIRED**)
+  aas:
+    url: https://{{ isecl_control_plane_ip }}:30444/aas/v1/ # AAS Base url
+  hostAliasEnabled: false # Set this to true for using host aliases and also add entries accordingly in ip, hostname entries. hostalias is required when ingress is deployed and pods are not able to resolve the domain names
+  secret:
+    superAdminUsername: {{ isecl_users_super_admin_username }}
+    superAdminPassword: {{ isecl_users_super_admin_password }}
+    globalAdminUsername: {{ isecl_users_global_admin_username }}
+    globalAdminPassword: {{ isecl_users_global_admin_password }}
+  aliases:
+    hostAliases:
+      - ip: ""
+        hostnames:
+          - ""
+          - ""
+
+hvs:
+  image:
+    name: isecl/hvs # Host Verification Service image name<br> (**REQUIRED**)
+  config:
+    requireEKCertForHostProvision: true # If set to true enforce ta hardening <br> (Allowed values: `true`\`false`)
+    verifyQuoteForHostRegistration: true # If set to true enforce ta hardening <br> (Allowed values: `true`\`false`)
+  secret:
+    dbUsername: {{ isecl_hvs_db_username }} # DB Username for HVS DB
+    dbPassword: {{ isecl_hvs_db_password }} # DB Password for HVS DB
+
+nats:
+  clientPort: 30222
+
+nats-init:
+  image:
+    name: isecl/nats-init # The image name of nats-init container
+
+global:
+  controlPlaneHostname:  {{ isecl_control_plane_ip }} # K8s control plane IP/Hostname<br> (**REQUIRED**)
+
+  image:
+    registry: isecl
+    pullPolicy: IfNotPresent # The pull policy for pulling from container registry<br> (Allowed values: `Always`/`IfNotPresent`)
+    imagePullSecret:  # The image pull secret for authenticating with image registry, can be left empty if image registry does not require authentication
+    initName: isecl/init-wait # The image name of init container
+
+  config:
+    dbhostSSLPodRange: 10.1.0.0/8 # PostgreSQL DB Host Address(IP address/subnet-mask). IP range varies for different k8s network plugins(Ex: Flannel - 10.1.0.0/8 (default), Calico - 192.168.0.0/16).
+    nats:
+      enabled: true # Enable/Disable NATS mode<br> (Allowed values: `true`\`false`)
+      servers: "nats://{{ isecl_control_plane_ip }}:30222"   # NATS Server IP/Hostname<br> (**REQUIRED IF ENABLED**) e.g nats://192.1.2.4:30222
+
+  storage:
+    nfs:
+      server: {{ isecl_nfs_server }} # The NFS Server IP/Hostname<br> (**REQUIRED**)
+      path: {{ isecl_nfs_server_dir }}  # The path for storing persistent data on NFS
+
+  service:
+    cms: 30445 # The service port for Certificate Management Service
+    aas: 30444 # The service port for Authentication Authorization Service
+    hvs: 30443 # The service port for SGX Host Verification Service
+
+  ingress:
+    enable: false # Accept true or false to notify ingress rules are enable or disabled, Default value: false
+
+  aas:
+    secret:
+      adminUsername: {{ isecl_users_aas_admin_username }} # Admin Username for AAS
+      adminPassword: {{ isecl_users_aas_admin_password }} # Admin Password for AAS
+
+  hvs:
+    secret:
+      serviceUsername: {{ isecl_users_hvs_admin_username }} # Admin Username for HVS
+      servicePassword: {{ isecl_users_hvs_admin_password }} # Admin Password for HVS
+
+  proxyEnabled: true # Set to true when running deploying behind corporate proxy
+{% if "http_proxy" in proxy_env and proxy_env["http_proxy"] | length %}
+  httpProxy: {{ proxy_env["http_proxy"] }} # Set http_proxy url
+{% endif %}
+{% if "https_proxy" in proxy_env and proxy_env["https_proxy"] | length %}
+  httpsProxy: {{ proxy_env["https_proxy"] }} # Set https_proxy url
+{% endif %}
+{% if "all_proxy" in proxy_env and proxy_env["all_proxy"] | length %}
+  allProxy: {{ proxy_env["all_proxy"] }} # Set all_proxy url
+{% endif %}
+{% if "no_proxy" in proxy_env and proxy_env["no_proxy"] | length %}
+  noProxy: {{ proxy_env["no_proxy"] }} # Set no_proxy
+{% endif %}

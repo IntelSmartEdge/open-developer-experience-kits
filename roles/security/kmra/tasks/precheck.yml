@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+---
+- name: Check settings
+  block:
+    - name: Check if SGX pccs setup is enabled or not
+      fail:
+        msg: "Please make sure SGX pccs setup is enabled"
+      when: not pccs_enable
+  when: kmra_enable | default(false)

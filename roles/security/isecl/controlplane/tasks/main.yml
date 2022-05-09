@@ -10,32 +10,46 @@
 
 - name: Set K8S control plane vars
   set_fact:
-    isecl_k8s_control_plane_ip: "{{ hostvars[inventory_hostname].ansible_default_ipv4.address }}"
+    isecl_k8s_control_plane_ip: "{{ hostvars[inventory_hostname].ansible_host }}"
     isecl_k8s_control_plane_hostname: "{{ hostvars[inventory_hostname].ansible_hostname }}"
-
-- name: Get tokens
-  include_tasks: get_tokens.yml
-
-- name: Handle TPM endorsment certificate
-  include_tasks: handle_endorsment_cert.yml
 
 - name: Setup helm charts dir
   include_tasks: ../../common/tasks/setup_helm_chart_dir.yml
 
 - name: Setup NFS
   include_tasks: ../../common/tasks/setup_nfs.yml
-  vars:
-    helm_values_files:
-      - "{{ isecl_helm_charts_dir }}/ihub/values.yaml"
 
-- name: Deploy TA
-  include_tasks: trust-agent.yml
+- name: Get tokens
+  include_tasks: get_tokens.yml
+    
+- name: Handle TPM endorsment certificate
+  include_tasks: handle_endorsment_cert.yml
 
-- name: Deploy k8s-extensions-controller
-  include_tasks: k8s-extensions-controller.yml
+- name: Create Secrets for ISecL Scheduler TLS Key-pair
+  include_tasks: create_isecl_sched_secrets.yml
 
-- name: Deploy ihub
-  include_tasks: ihub.yml
+- name: Create admission-controller-certs secrets for admission controller deployment
+  include_tasks: create_isecl_admission_ctrl_secrets.yml
 
-- name: Deploy k8s-extensions-scheduler
-  include_tasks: k8s-extensions-scheduler.yml
+- name: Generate CA Bundle
+  shell: kubectl config view --raw --minify --flatten -o jsonpath='{.clusters[].cluster.certificate-authority-data}'
+  register: ca_bundle
+  changed_when: ca_bundle.rc != 0
+ 
+- name: Generate isecl data plane usecase values.yml
+  template:
+    src: isecl-data-plane-values.yaml.j2
+    dest: "{{ isecl_helm_charts_dir }}/usecases/twp-cloud-service-provider/values.yaml"
+    mode: a=rx,u+w
+
+- name: Run dependency update
+  command: helm dependency update usecases/twp-cloud-service-provider/
+  args:
+    chdir: "{{ isecl_helm_charts_dir }}"
+  changed_when: false
+
+- name: Deploy isecl data plane services
+  command: "helm install twp-csp usecases/twp-cloud-service-provider/ -n {{ isecl_name_space }} --create-namespace"
+  args:
+    chdir: "{{ isecl_helm_charts_dir }}"
+  changed_when: false

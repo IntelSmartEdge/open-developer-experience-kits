@@ -12,6 +12,10 @@
     url: "{{ _cmctl_url }}"
     dest: "{{ tempdir.path }}/cmctl.tar.gz"
     mode: u+rwx
+  register: result
+  retries: "{{ number_of_retries | default(10) }}"
+  until: result is succeeded
+  delay: "{{ retry_delay | default(5) }}"
 
 - name: extract the archive
   unarchive:

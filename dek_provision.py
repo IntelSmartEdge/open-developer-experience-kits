@@ -8,8 +8,6 @@
 import os
 import sys
 
-_CFG_FILE = "my.yml"
-
 if __name__ == "__main__":
     sys.path.insert(
         1, os.path.join(os.path.dirname(os.path.realpath(__file__)), "scripts", "deploy_esp"))

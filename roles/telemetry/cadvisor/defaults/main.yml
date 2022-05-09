@@ -3,6 +3,7 @@
 
 ---
 
+telemetry_cadvisor_port: 9107
 _cadvisor_chart_dir: "{{ ne_helm_charts_default_dir }}/cadvisor"
 
 _proxy_server_name: cadvisor

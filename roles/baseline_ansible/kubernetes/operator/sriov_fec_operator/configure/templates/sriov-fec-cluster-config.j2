@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+apiVersion: sriovfec.intel.com/v2
+kind: SriovFecClusterConfig
+metadata:
+  name: {{ sriov_fec_cluster_config.cluster_config_name }}
+  namespace: {{ sriov_fec_operator_namespace }}
+spec:
+  priority: {{ sriov_fec_cluster_config.priority }}
+  drainSkip: {{ sriov_fec_cluster_config.drainskip }}
+{% if sriov_fec_cluster_config.selected_node is defined %}
+  # nodeSelector and all its key-value pairs are optional
+  nodeSelector:
+    kubernetes.io/hostname: {{ sriov_fec_cluster_config.selected_node }}
+{% endif %}
+{% if sriov_fec_cluster_config.pciAddress is defined %}
+  # acceleratorSelector and all its fields are optional
+  acceleratorSelector:
+    pciAddress: {{ sriov_fec_cluster_config.pci_address }}
+{% endif %}
+  physicalFunction:
+    pfDriver: {{ sriov_fec_cluster_config.pf_driver }}
+    vfDriver: {{ sriov_fec_cluster_config.vf_driver }}
+    vfAmount: {{ sriov_fec_cluster_config.vf_amount }}
+{% if sriov_fec_cluster_config.bbdevconfig is defined %}
+    bbDevConfig:
+      acc100:
+        pfMode: {{ sriov_fec_cluster_config.bbdevconfig.pf_mode }}
+        numVfBundles: {{ sriov_fec_cluster_config.bbdevconfig.num_vf_bundles }}
+        maxQueueSize: {{ sriov_fec_cluster_config.bbdevconfig.max_queue_size }}
+        uplink4G:
+          numQueueGroups: {{ sriov_fec_cluster_config.bbdevconfig.ul4g_num_queue_groups }}
+          numAqsPerGroups: {{ sriov_fec_cluster_config.bbdevconfig.ul4g_num_aqs_per_groups }}
+          aqDepthLog2: {{ sriov_fec_cluster_config.bbdevconfig.ul4g_aq_depth_log2 }}
+        downlink4G:
+          numQueueGroups: {{ sriov_fec_cluster_config.bbdevconfig.dl4g_num_queue_groups }}
+          numAqsPerGroups: {{ sriov_fec_cluster_config.bbdevconfig.dl4g_num_aqs_per_groups }}
+          aqDepthLog2: {{ sriov_fec_cluster_config.bbdevconfig.dl4g_aq_depth_log2 }}
+        uplink5G:
+          numQueueGroups: {{ sriov_fec_cluster_config.bbdevconfig.ul5g_num_queue_groups }}
+          numAqsPerGroups: {{ sriov_fec_cluster_config.bbdevconfig.ul5g_num_aqs_per_groups }}
+          aqDepthLog2: {{ sriov_fec_cluster_config.bbdevconfig.ul5g_aq_depth_log2 }}
+        downlink5G:
+          numQueueGroups: {{ sriov_fec_cluster_config.bbdevconfig.dl5g_num_queue_groups }}
+          numAqsPerGroups: {{ sriov_fec_cluster_config.bbdevconfig.dl5g_num_aqs_per_groups }}
+          aqDepthLog2: {{ sriov_fec_cluster_config.bbdevconfig.dl5g_aq_depth_log2 }}
+{% else %}
+    bbDevConfig: {}
+{% endif %}

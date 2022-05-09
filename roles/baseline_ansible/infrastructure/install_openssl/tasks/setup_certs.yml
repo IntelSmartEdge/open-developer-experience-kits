@@ -6,7 +6,7 @@
     path: "{{ item.openssl_dir }}"
     state: absent
   become: yes
-  with_items: "{{ openssl_certs_mapping | default([]) }}"
+  loop: "{{ openssl_certs_mapping | default([]) }}"
 
 - name: Create a symbolic link
   file:
@@ -17,4 +17,4 @@
     mode: a=rx,u+w
     state: link
   become: yes
-  with_items: "{{ openssl_certs_mapping | default([]) }}"
+  loop: "{{ openssl_certs_mapping | default([]) }}"

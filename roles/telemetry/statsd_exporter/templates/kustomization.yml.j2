@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - all.yaml
+
+patchesJson6902:
+  - target:
+      kind: Deployment
+      group: apps
+      version: v1
+      name: {{ _statsd_fullname_override }}
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/-
+        value:
+          name: {{ _proxy_container.name }}
+          image: {{ _proxy_container.image }}:{{ _proxy_container.tag }}
+          volumeMounts:
+            - name: proxy-config
+              mountPath: {{ _proxy_container.path_to_nginx_conf }}
+              subPath: nginx.conf
+            - name: certs
+              mountPath: {{ _proxy_container.certs_dest }}
+          ports:
+            - containerPort: {{ _proxy_container.metrics_statsd_port }}
+              name: https
+      - op: remove
+        path: /spec/template/spec/containers/0/ports/0
+      - op: remove
+        path: /spec/template/spec/containers/0/livenessProbe
+      - op: remove
+        path: /spec/template/spec/containers/0/readinessProbe
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: proxy-config
+            configMap:
+              name: {{ _proxy_cm_name }}
+          - name: certs
+            secret:
+              secretName: {{ _proxy_secret_name }}
+
+  - target:
+      name: .*
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: {{ telemetry_namespace }}

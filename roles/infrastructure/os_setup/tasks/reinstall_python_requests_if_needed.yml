@@ -21,7 +21,6 @@
     pip:
       name: requests
       state: present
-    become: yes
     when: python_requests_removed.changed
   when:
      - ansible_os_family == "RedHat"

@@ -1,10 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
 
-_docker_os_dependencies: "python2,apt-transport-https,ca-certificates,curl,gnupg-agent,software-properties-common,moreutils,jq,auditd,python3-pip"
-
+_docker_os_dependencies: "apt-transport-https,ca-certificates,curl,gnupg-agent,software-properties-common,moreutils,jq,auditd,python3-pip"
 # version string specific for Ubuntu 20.04
 _docker_package_version: "5:{{ _docker_version }}~3-0~ubuntu-focal"
 _docker_packages:

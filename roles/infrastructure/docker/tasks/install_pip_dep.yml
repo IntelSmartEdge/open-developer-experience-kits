@@ -1,7 +1,33 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
+
+- name: load pip versions variables
+  include_vars: ../../../baseline_ansible/infrastructure/install_packages/defaults/main.yml
+
+- name: install or change pip3 version
+  block:
+    - name: get pip version
+      command: "python3 -m pip --version"
+      register: pip_version_result
+      changed_when: false
+      failed_when: false
+    - name: install pip3
+      pip:
+        name: pip
+        version: "{{ pip3_version }}"
+        state: forcereinstall
+        executable: pip3
+        extra_args: --user
+      when: (pip_version_result.rc != 0) or not (pip3_version in pip_version_result.stdout)
+
+- name: add pip3 path to /etc/profile
+  lineinfile:
+    state: present
+    dest: /etc/profile
+    line: export PATH="${PATH}:$HOME/.local/bin"
+  become: yes
 
 - name: copy requirements.txt
   copy:
@@ -10,12 +36,9 @@
     mode: preserve
 
 - name: install dependencies and docker-compose
-  pip:
-    requirements: /tmp/requirements.txt
-    state: present
-    executable: pip2
+  shell: source /etc/profile && python3 -m pip install -r /tmp/requirements.txt --user
+  changed_when: true
   register: result
   retries: "{{ number_of_retries }}"
   until: result is succeeded
   delay: "{{ retry_delay }}"
-  become: yes

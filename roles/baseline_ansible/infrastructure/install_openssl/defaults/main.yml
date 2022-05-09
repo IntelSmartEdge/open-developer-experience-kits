@@ -1,10 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 ---
-openssl_version: "1.1.1l"
+openssl_version: "1.1.1m"
 
 openssl_package_name: "openssl-{{ openssl_version }}"
 openssl_download_url: "https://www.openssl.org/source/{{ openssl_package_name }}.tar.gz"
-openssl_checksum: "sha256:0b7a3e5e59c34827fe0c3a74b7ec8baef302b98fa80088d7f9153aa16fa76bd1"
+openssl_checksum: "sha256:f89199be8b23ca45fc7cb9f1d8d3ee67312318286ad030f5316aca6462db6c96"
 openssl_project_dir: "{{ project_dir }}/openssl"
 openssl_custom_install_path: "/usr/local/ssl/"

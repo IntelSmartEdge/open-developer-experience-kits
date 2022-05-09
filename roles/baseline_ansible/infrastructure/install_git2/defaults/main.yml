@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+git_version: "2.30.1"
+git_tarball_url: "https://github.com/git/git/archive/v{{ git_version }}.tar.gz"
+git2_dir: "{{ project_dir }}/git-{{ git_version }}"
+
+git2_checksum: "sha1:0b98840d9a5902a14968f7cf513cf9c7562b7973"
+
+local_openssl_instalation: false

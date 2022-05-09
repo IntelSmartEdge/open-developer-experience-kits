@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.telegraf.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.telegraf.name }}
+    app: {{ .Values.telegraf.name }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+    chart: {{ .Release.Name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.telegraf.port }}
+      targetPort: {{ .Values.telegraf.port }}
+      protocol: TCP
+      name: metrics
+  selector:
+    app.kubernetes.io/name: telegraf

@@ -31,8 +31,8 @@
 
 - name: store admin password
   set_fact:
-    harbor_admin_password: "{{ harbor_password_cmd.stdout }}"
+    harbor_admin_password: "{{ harbor_password_cmd.stdout | b64decode }}"
     
 - name: Log into Harbor registry
-  command: docker login {{ _registry_ip_address }}:{{ _registry_port }} -u admin -p {{ harbor_password_cmd.stdout | b64decode }}
+  command: docker login {{ _registry_ip_address }}:{{ _registry_port }} -u admin -p {{ harbor_admin_password }}
   changed_when: false

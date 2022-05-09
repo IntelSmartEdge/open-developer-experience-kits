@@ -25,6 +25,7 @@ spec:
   {% for ip_adress in ips %}
     - {{ ip_adress }}
   {% endfor %}
+    - 127.0.0.1
 
   dnsNames:
   {% for dns_name in dns_names|default([])%}

@@ -20,7 +20,7 @@
       dest: "{{ _sriov_network_operator.download_dir }}"
       clone: true
       update: true
-      version: "{{ _sriov_network_operator.commit }}"
+      version: "{{ _sriov_network_operator.version }}"
       force: true
     register: result
     retries: "{{ number_of_retries | default(10) }}"
@@ -31,7 +31,7 @@
     include_role:
       name: kubernetes/custom_namespace
     vars:
-      - _custom_ns: "{{ sriov_network_operator_namespace }}"
+      - _custom_ns: [ "{{ sriov_network_operator_namespace }}" ]
 
   - name: Create certificates for SR-IOV Network Operator admission controller
     include_tasks: sno_certs.yml

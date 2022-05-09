@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+- name: declare an empty list to populate the raw drives present
+  set_fact:
+    raw_ssd_devices: "{{ raw_ssd_devices | default([]) + [item.key] }}"
+  when:
+  - item.key.startswith('sd')
+  - item.value is not search('usb-*')
+  - item.value.partitions | length == 0
+  loop: "{{ ansible_devices | dict2items }}"
+- name: print the list of ssd devices
+  debug: var=raw_ssd_devices
+- name: assign the raw drive for rook-ceph OSD
+  set_fact:
+    _rook_ceph_osd_name: "{{ raw_ssd_devices[0] }}"
+  when:
+  - (raw_ssd_devices | length) > 0
+
+- name: identify the drive to wipe out
+  block:
+    - name: find the root mountpoint
+      shell: echo $(eval $(lsblk -oMOUNTPOINT,NAME -P | grep 'MOUNTPOINT="/"'); echo $NAME)
+      register: output
+    - name: identify the drive without OS
+      set_fact:
+        drive_name: "{{ item.key }}"
+      when:
+      - item.key.startswith('sd')
+      - item.value is not search('usb-*')
+      - item.value is not search (output.stdout)
+      loop: "{{ ansible_devices | dict2items }}"
+    - name: assign the drive for OSD
+      set_fact:
+        _rook_ceph_osd_name: "{{ drive_name }}"
+  when:
+  - (raw_ssd_devices | length) == 0
+
+- name: drive identified for rook-ceph
+  debug:
+    msg: "potential drive for rook-ceph {{ _rook_ceph_osd_name }}"

@@ -6,7 +6,7 @@
 - name: find docker audit files
   stat:
     path: "{{ item }}"
-  with_items: "{{ _docker_audit_files }}"
+  loop: "{{ _docker_audit_files }}"
   register: stats
 
 - name: add audit rules for docker
@@ -17,6 +17,6 @@
     create: true
   become: yes
   when: item.stat.exists
-  with_items: "{{ stats.results }}"
+  loop: "{{ stats.results }}"
   notify:
     - restart auditd

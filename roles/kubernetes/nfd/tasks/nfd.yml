@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2019-2021 Intel Corporation
+# Copyright (c) 2019-2022 Intel Corporation
 
 ---
 - name: check if NFD release already exists
@@ -43,7 +43,7 @@
         name: "{{ item }}"
         state: directory
         mode: a=rx,u+w
-      with_items:
+      loop:
         - "{{ _nfd_chart_dir }}"
         - "{{ _nfd_chart_dir }}/templates"
       changed_when: true
@@ -56,7 +56,7 @@
       retries: "{{ number_of_retries }}"
       until: result is succeeded
       delay: "{{ retry_delay }}"
-      with_items: "{{ _nfd_chart }}"
+      loop: "{{ _nfd_chart }}"
 
     - name: download NFD chart templates
       get_url:
@@ -66,7 +66,30 @@
       retries: "{{ number_of_retries }}"
       until: result is succeeded
       delay: "{{ retry_delay }}"
-      with_items: "{{ _nfd_chart_templates }}"
+      loop: "{{ _nfd_chart_templates }}"
+
+    - name: customize NFD chart templates
+      block:
+        - name: install patch utility
+          package:
+            name: patch
+            state: present
+          become: true
+        - name: patch NFD ClusterRole
+          patch:
+            src: "nfd-clusterrole.yaml.patch"
+            dest: "{{ _nfd_chart_dir }}/templates/clusterrole.yaml"
+            strip: 1
+        - name: patch NFD master deployment
+          patch:
+            src: "nfd-master.yaml.patch"
+            dest: "{{ _nfd_chart_dir }}/templates/master.yaml"
+            strip: 1
+        - name: patch NFD values
+          patch:
+            src: "nfd-values.yaml.patch"
+            dest: "{{ _nfd_chart_dir }}/values.yaml"
+            strip: 1
 
     # smartedge-system namespace should already exist
     - name: create system namespace if needed

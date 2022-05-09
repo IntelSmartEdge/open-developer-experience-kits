@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+- name: Open Node exporter port on each edgenode
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports:
+      - "{{ telemetry_node_exporter_port }}/tcp"
+
+- name: Open telegraf port on each edgenode
+  include_role:
+    name: infrastructure/firewall_open_ports
+  vars:
+    fw_open_ports:
+      - "{{ telemetry_telegraf_port }}/tcp"
+  when: telemetry_telegraf_enabled | default(True)

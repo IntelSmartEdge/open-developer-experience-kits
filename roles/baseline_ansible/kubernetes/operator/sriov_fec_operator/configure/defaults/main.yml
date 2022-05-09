@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+_git_repo_dest_sriov_suf: "sriov-fec-operator-config"
+sriov_fec_operator_namespace: vran-acceleration-operators 
+_sriov_fec_cluster_config_filename: sriov-fec-cluster-config.yaml
+
+## Example:
+sriov_fec_cluster_config:
+  cluster_config_name: "default-sriov-cc"
+  priority: 1
+  drainskip: true
+  pf_driver: "igb_uio"
+  vf_driver: "vfio-pci"
+  vf_amount: 3
+  bbdevconfig:
+    pf_mode: false
+    num_vf_bundles: 3
+    max_queue_size: 1024
+    ul4g_num_queue_groups: 0
+    ul4g_num_aqs_per_groups: 16
+    ul4g_aq_depth_log2: 4
+    dl4g_num_queue_groups: 0
+    dl4g_num_aqs_per_groups: 16
+    dl4g_aq_depth_log2: 4
+    ul5g_num_queue_groups: 4
+    ul5g_num_aqs_per_groups: 16
+    ul5g_aq_depth_log2: 4
+    dl5g_num_queue_groups: 4
+    dl5g_num_aqs_per_groups: 16
+    dl5g_aq_depth_log2: 4

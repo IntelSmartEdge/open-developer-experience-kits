@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+# The operators roles should be executed on K8s control plane
+- name: Instal SRIOV network operator
+  include_role:
+    name: baseline_ansible/kubernetes/operator/sriov_network_operator/install
+  when: "sriov_network_operator_enable | default(False)"
+- name: Configure SRIOV network operator
+  include_role:
+    name: baseline_ansible/kubernetes/operator/sriov_network_operator/configure
+  when: "(sriov_network_operator_enable | default(False)) and (sriov_network_operator_configure_enable | default(False))"
+
+- name: Install SRIOV FEC operator
+  include_role:
+    name: baseline_ansible/kubernetes/operator/sriov_fec_operator/install
+  when: "sriov_fec_operator_enable | default(False)"
+- name: Configure SRIOV FEC operator
+  include_role:
+    name: baseline_ansible/kubernetes/operator/sriov_fec_operator/configure
+  when: "(sriov_fec_operator_enable | default(False)) and (sriov_fec_operator_configure_enable | default(False))"

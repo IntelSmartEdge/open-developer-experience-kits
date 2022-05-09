@@ -65,7 +65,7 @@
         dest: "{{ driver_dir }}"
         list_files: true
         remote_src: true
-        mode: a=r,u+w
+        mode: a=rx,u+w
       become: yes
       register: untar_results
 
@@ -75,7 +75,7 @@
         chdir: "{{ '/'.join([untar_results.dest, untar_results.files[0], 'src']) }}"
       changed_when: false
       become: yes
-      with_items:
+      loop:
         - clean
         - install
 

@@ -1,39 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
-
-- name: check pip2 version
-  command: "pip2 --version"
-  register: pip_version
-  changed_when: false
-  ignore_errors: true
-
-- name: install pip2
-  block:
-    # - name: download get-pip.py #TODO
-    #   shell: "curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output get-pip.py"
-    - name: create temp directory for pip2 installation
-      tempfile:
-        state: directory
-        prefix: pip2-
-      register: pip2_temp_dir
-    - name: download get-pip.py
-      get_url:
-        url: "https://bootstrap.pypa.io/pip/2.7/get-pip.py"
-        dest: "{{ pip2_temp_dir.path }}"
-    - name: install pip
-      command: "python2 {{ pip2_temp_dir.path }}/get-pip.py"
-      become: yes
-    - name: change pip version
-      pip:
-        name: pip==20.2.4
-        extra_args: --force-reinstall
-        state: present
-        executable: pip2
-  when: >
-    pip_version.rc != 0 or
-    pip_version.stdout is not match('pip 20.2.4')
 
 - name: check if Docker repository exists
   stat:
@@ -46,7 +14,7 @@
       file:
         path: "{{ item }}"
         state: absent
-      with_items:
+      loop:
       - "/usr/share/keyrings/docker-archive-keyring.gpg"
       - "/etc/apt/sources.list.d/docker.list"
       changed_when: true

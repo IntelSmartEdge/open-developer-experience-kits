@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: check if {{ dpdk_kmods_repo }} already downloaded
+  stat:
+    path: "{{ dpdk_kmods_dest }}"
+  register: igb_uio_downloaded
+
+- name: clone intel module
+  git:
+    repo: "{{ dpdk_kmods_repo }}"
+    dest: "{{ dpdk_kmods_dest }}"
+    version: 'main'
+    force: true
+  when: not igb_uio_downloaded.stat.exists
+
+- name: apply fix to Makefile
+  replace:
+    path: "{{ dpdk_kmods_dest }}/linux/igb_uio/Makefile"
+    regexp: "\\(PWD\\)"
+    replace: "(CURDIR)"
+    mode: "0644"
+
+- name: build intel module
+  make:
+    chdir: "{{ dpdk_kmods_dest }}/linux/igb_uio"
+
+- name: get current kernel
+  command: uname -r
+  register: unamer
+  changed_when: false
+
+- name: copy igb_uio kernel module
+  copy:
+    src: "{{ dpdk_kmods_dest }}/linux/igb_uio/igb_uio.ko"
+    dest: "/lib/modules/{{ unamer.stdout }}/kernel/drivers/"
+    remote_src: true
+    mode: 0644
+    owner: "{{ ansible_user | default(ansible_user_id) }}"
+    group: root
+  become: true
+
+- name: depmod
+  command: depmod -a
+  changed_when: true
+  become: true
+
+- name: copy list of modules to load at boot
+  copy:
+    src: dpdk.conf
+    dest: /etc/modules-load.d/dpdk.conf
+    mode: 0644
+    owner: "{{ ansible_user | default(ansible_user_id) }}"
+  become: true
+
+- name: unload igb_uio and vfio-pci modules
+  modprobe:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - "igb_uio"
+    - "uio"
+    - "vfio-pci"
+    - "kvmgt"
+    - "vfio_mdev"
+    - "vfio_iommu_type1"
+    - "vfio"
+  become: yes
+
+- name: load igb_uio and vfio-pci modules
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "uio"
+    - "igb_uio"
+    - "vfio"
+    - "vfio-pci"
+  become: yes

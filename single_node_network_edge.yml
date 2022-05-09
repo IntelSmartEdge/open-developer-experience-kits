@@ -20,6 +20,9 @@
     - name: Set global variables for baseline ansible
       set_fact:
         project_user: "{{ ansible_user }}"
+    - name: check raw drive status
+      include_tasks: ./tasks/ssd_check.yml
+      when: rook_ceph_enabled | default(False)
   handlers:
     - import_tasks: "{{ playbook_dir }}/tasks/reboot_server.yml"
   roles:
@@ -57,8 +60,6 @@
       when: "platform_attestation_controller | default(False) or platform_attestation_node | default(False)"
 
     - role: infrastructure/docker
-    - role: telemetry/collectd/node
-      when: "telemetry_collectd_enable | default(True)"
 
 - hosts: controller_group
   pre_tasks:
@@ -72,7 +73,6 @@
   roles:
     - role: infrastructure/setup_baseline_ansible
     - role: infrastructure/build_noproxy
-    - role: infrastructure/os_setup
     - role: kubernetes/install
     - role: kubernetes/customize_kubelet
     - role: kubernetes/controlplane
@@ -83,25 +83,15 @@
       when: "harbor_registry_enable | default(True)"
     - role: kubernetes/create_namespaces
     - role: kubernetes/default_netpol
-
-    - role: telemetry/prometheus
-      when: "telemetry_prometheus_enable | default(True)"
-    - role: telemetry/statsd-exporter
-      when: "telemetry_statsd_exporter_enable | default(True)"
-
-    - role: telemetry/collectd/controlplane
-      when: "telemetry_collectd_enable | default(True)"
-    - role: telemetry/cadvisor
-      when: "telemetry_cadvisor_enable | default(True)"
-    - role: telemetry/grafana
-      when: "telemetry_grafana_enable | default(True)"
-
     - role: kubernetes/nfd
       when: ne_nfd_enable | default(True)
-
     - role: kubernetes/sgx_device_plugin
       when: sgx_enabled | default(True)
+    - role: kubernetes/kubevirt
+      when: kubevirt_enable | default(False)
 
+    - role: infrastructure/device_sriov_detection
+      when: "sriov_network_operator_enable and sriov_network_operator_configure_enable and sriov_network_detection_application_enable | default(True)"
     - role: baseline_ansible/kubernetes/operator/sriov_network_operator/prepare_node
       reference_host: "{{ groups['controller_group'][0] }}"
       when: "sriov_network_operator_enable | default(False)"
@@ -110,5 +100,12 @@
     - role: baseline_ansible/kubernetes/operator/sriov_network_operator/configure
       when: "sriov_network_operator_enable and sriov_network_operator_configure_enable | default(False)"
 
+    - role: kubernetes/rook_ceph
+      when: rook_ceph_enabled | default(False)
+
 - name: Provision security components
   import_playbook: playbooks/security.yml
+
+- name: Provision telemetry components
+  import_playbook: playbooks/telemetry.yml
+  when: telemetry_enable | default(True)

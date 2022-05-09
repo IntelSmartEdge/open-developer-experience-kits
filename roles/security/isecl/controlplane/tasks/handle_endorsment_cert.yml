@@ -10,14 +10,14 @@
     register: hosts_ek_cert_temp_dir
 
   - name: Get RSA 2048 EK certificate from NVRAM
-    command: tpm2_nvread -C o -o ek.cer 0x1c00002
+    command: tpm2_nvread -C o -o ek.der 0x1c00002
     args:
       chdir: "{{ hosts_ek_cert_temp_dir.path }}"
-    become: yes
+    become: true
 
   # Extract TPM endorsement root CA URI
   - name: Get TPM root CA certificate URI
-    shell: openssl x509 -in ek.cer -inform der -text -noout | sed -n 's/ *CA Issuers - URI://p'
+    shell: openssl x509 -in ek.der -inform der -text -noout | sed -n 's/ *CA Issuers - URI://p'
     args:
       chdir: "{{ hosts_ek_cert_temp_dir.path }}"
     register: host_tpm_issuer_root_ca_uri
@@ -49,18 +49,66 @@
     retries: 10
     delay: 10
 
-  - name: Get TPM root CA certificate name
-    shell: |
-      openssl x509 -in {{ tpm_root_ca }} -inform der -text -noout | sed -n 's/ *Subject: CN *= //p' | awk -F'+' '{print $1}'
+  # TPM root CA certificate is in PEM/DER format
+  - name: Check TPM root CA certificate file type
+    command: file {{ tpm_root_ca }}
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: tpm_root_ca_cert_type
+
+  - name: Check TPM EK certificate file type
+    command: file ek.der
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: tpm_ek_ca_cert_type
+
+  # Get the issuer name for HVS api hvs/v2/tpm-endorsements and hvs/v2/ca-certificates
+  - name: Get TPM root CA certificate issuer name
+    shell: openssl x509 -in ek.der -inform der -text -noout | grep -Po 'CN =\K.*'
     args:
       chdir: "{{ hosts_ek_cert_temp_dir.path }}"
     register: host_tpm_issuer_root_ca_name
 
-  - name: Convert TPM root certificate to PEM without headers
-    command: base64 --wrap=0 {{ tpm_root_ca }}
+  - name: Remove headers and new line from PEM file
+    lineinfile:
+      path: "{{ hosts_ek_cert_temp_dir.path }}/{{ tpm_root_ca }}"
+      regexp: "{{ item.regexp }}"
+      state: absent
+    loop:
+      - { regexp: "BEGIN CERTIFICATE" }
+      - { regexp: "END CERTIFICATE" }
+      - { regexp: ' \t\n\r' }
+    register: host_tpm_issuer_root_ca_pem
+    when: tpm_root_ca_cert_type.stdout.find('PEM certificate') != -1
+
+  - name: Load pem file data
+    slurp:
+      src: "{{ hosts_ek_cert_temp_dir.path }}/{{ tpm_root_ca }}"
+    register: slurped_pem_data
+    when: host_tpm_issuer_root_ca_pem.changed
+
+  - name: Set root ca pem content
+    set_fact:
+      root_ca_cert_pem: "{{ slurped_pem_data.content | b64decode }}"
+    when: host_tpm_issuer_root_ca_pem.changed
+
+  - name: Convert TPM root ca certificate to PEM without headers and new line
+    shell: openssl x509 -inform der -in {{ tpm_root_ca }} | sed '/BEGIN CERTIFICATE/d; /END CERTIFICATE/d' | tr -d " \t\n\r"
     args:
       chdir: "{{ hosts_ek_cert_temp_dir.path }}"
     register: host_tpm_issuer_root_ca_pem
+    when: tpm_root_ca_cert_type.stdout.find('data') != -1
+
+  - name: Set root ca pem content
+    set_fact:
+      root_ca_cert_pem: "{{ host_tpm_issuer_root_ca_pem.stdout }}"
+    when: host_tpm_issuer_root_ca_pem.changed
+
+  - name: Convert TPM EK certificate to PEM without headers and new line
+    shell: openssl x509 -inform der -in ek.der | base64 | tr -d " \t\n\r"
+    args:
+      chdir: "{{ hosts_ek_cert_temp_dir.path }}"
+    register: host_tpm_ek_pem
 
   always:
     - name: Cleanup temp dir
@@ -68,15 +116,58 @@
         path: "{{ hosts_ek_cert_temp_dir.path }}"
         state: absent
 
-- name: Get HVS endorsement certificates
+- name: Get list of tpm endorsement ca certificates
   uri:
     method: GET
-    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates?domain=ek"
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates?domain=root"
     headers:
       Accept: application/json
+      Authorization: "Bearer {{ isecl_global_admin_bearer_token }}"
+    body_format: json
+    validate_certs: no
+    return_content: yes
+    status_code:
+      - 200
+  register: hvs_endorsement_ca_certs
+  until: hvs_endorsement_ca_certs is not failed
+  retries: 10
+  delay: 10
+
+- name: Find EK CA certificate in HVS endorsment certificates
+  set_fact:
+    endorsement_ca_cert_info: "{{ hvs_endorsement_ca_certs.json | json_query(endorsement_ca_cert_query) }}"
+  vars:
+    endorsement_ca_cert_query: "ca_certificate[?certificate=='{{ root_ca_cert_pem }}'].name"
+
+- name: Add endorsement CA certificates to HVS
+  uri:
+    method: POST
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates"
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ isecl_global_admin_bearer_token }}"
     body:
-      username: "{{ isecl_users_global_admin_username }}"
-      password: "{{ isecl_users_global_admin_password }}"
+      name: "{{ host_tpm_issuer_root_ca_name.stdout }}"
+      type: "root"
+      certificate: "{{ root_ca_cert_pem }}"
+    body_format: json
+    validate_certs: no
+    return_content: yes
+    status_code:
+      - 201
+  register: add_endorsement_ca_certs_to_hvs
+  until: add_endorsement_ca_certs_to_hvs is not failed
+  retries: 10
+  delay: 10
+  when: "endorsement_ca_cert_info | length == 0"
+
+- name: Get list of tpm endorsement certificates
+  uri:
+    method: GET
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/tpm-endorsements"
+    headers:
+      Accept: application/json
+      Authorization: "Bearer {{ isecl_global_admin_bearer_token }}"
     body_format: json
     validate_certs: no
     return_content: yes
@@ -87,30 +178,43 @@
   retries: 10
   delay: 10
 
+- name: Get hardware uuid of node
+  shell: "set -o pipefail && dmidecode | grep -i uuid | sed -e 's/UUID: //' -e 's/^[[:space:]]*//'"
+  become: true
+  register: hardware_uuid
+  changed_when: hardware_uuid.rc != 0
+
+- name: Check if hardware uuid is non-empty
+  fail:
+    msg: Failed to get hardware uuid
+  when: hardware_uuid.stdout | length == 0
+
 - name: Find EK certificate in HVS endorsment certificates
   set_fact:
     endorsement_cert_info: "{{ hvs_endorsement_certs.json | json_query(endorsement_cert_query) }}"
   vars:
-    endorsement_cert_query: "ca_certificate[?certificate=='{{ host_tpm_issuer_root_ca_pem.stdout }}'].name"
+    endorsement_cert_query: "tpmendorsements[?certificate=='{{ host_tpm_ek_pem.stdout }}'].hardware_uuid"
 
 - name: Add endorsement certificates to HVS
   uri:
     method: POST
-    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/ca-certificates"
+    url: "https://{{ isecl_control_plane_ip }}:30443/hvs/v2/tpm-endorsements"
     headers:
       Accept: application/json
       Authorization: "Bearer {{ isecl_global_admin_bearer_token }}"
     body:
-      name: "{{ host_tpm_issuer_root_ca_name.stdout }}"
-      type: "ek"
-      certificate: "{{ host_tpm_issuer_root_ca_pem.stdout }}"
+      certificate: "{{ host_tpm_ek_pem.stdout }}"
+      comment: "EK cert of {{ hardware_uuid.stdout }}"
+      hardware_uuid: "{{ hardware_uuid.stdout }}"
+      issuer: "{{ host_tpm_issuer_root_ca_name.stdout }}"
+      revoked: false
     body_format: json
     validate_certs: no
     return_content: yes
     status_code:
       - 201
-  register: add_endorsement_certs_to_hvs
-  until: add_endorsement_certs_to_hvs is not failed
+  register: add_endorsement_ek_certs_to_hvs
+  until: add_endorsement_ek_certs_to_hvs is not failed
   retries: 10
   delay: 10
   when: "endorsement_cert_info | length == 0"

@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+_git_repo_sriov: https://github.com/smart-edge-open/openshift-operator.git
+_git_repo_dest_sriov_suf: openshift-operator
+sriov_fec_operator_version: ocp-operator-22.01.04
+operator_registry_ip: "{{ hostvars[groups['controller_group'][0]]['ansible_host'] }}"
+operator_registry_port: 30003
+sriov_operator_version: 2.1.1
+sriov_fec_operator_namespace: vran-acceleration-operators 
+
+_opm_dest: /usr/local/bin/opm

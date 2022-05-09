@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+install_git:
+  RedHat:
+    - git
+  Debian:
+    - git
+
+install_dependencies:
+  RedHat:
+    - autoconf
+    - gcc
+    - gettext-devel
+    - openssl-devel
+    - perl-CPAN
+    - perl-devel
+    - zlib-devel
+    - curl-devel
+  Debian:
+    - gcc
+    - cmake
+    - autoconf
+    - libz-dev
+    - libssl-dev
+    - libcurl4-gnutls-dev
+    - libexpat1-dev
+    - gettext

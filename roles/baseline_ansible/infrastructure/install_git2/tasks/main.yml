@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: Check current git version
+  # noqa 303 Git module does not allow to check git version
+  command: git --version
+  register: git_version_command
+  changed_when: false
+
+- name: Set current_git_version
+  set_fact: current_git_version="{{ git_version_command.stdout.split()[-1] }}"
+  when: git_version_command is defined
+
+- name: install git from source
+  include_tasks: install.yml
+  when: (git_version_command is not defined) or (current_git_version < git_version)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 """
 Deploy Smart Edge with inventory.yml file.
@@ -187,7 +187,7 @@ def handle_cluster_inventory_dir(cluster_inventory_path, group_vars_path, host_v
     create_symlinks_for_inventory(DEFAULT_HOST_VARS_PATH, host_vars_path)
 
 
-def run_deployment(inventory):
+def run_deployment(inventory, cleanup=False, redeploy=False):
     """Deploys Smart Edge with given settings, returns Popen object"""
     inventory_dir = os.path.join(ALT_INVENTORIES_PATH, inventory.cluster_name)
     inventory_location = inventory.dump_to_yaml(inventory_dir)
@@ -197,10 +197,18 @@ def run_deployment(inventory):
 
     handle_deployment_type(inventory.deployment, group_vars_path)
 
-    if inventory.is_single_node:
-        playbook = "single_node_network_edge.yml"
+    # DEK do not support extra arguments like "clean" or "redeploy"
+    extra_options_supported = inventory.deployment in ["pwek-all-in-one"]
+
+    if extra_options_supported and cleanup:
+        playbook = "network_edge_5g_cleanup.yml"
+    elif extra_options_supported and redeploy:
+        playbook = "network_edge_5g_redeploy.yml"
     else:
-        playbook = "network_edge.yml"
+        if inventory.is_single_node:
+            playbook = "single_node_network_edge.yml"
+        else:
+            playbook = "network_edge.yml"
 
     playbook = os.path.join(SCRIPT_PARENT_DIR, playbook)
 
@@ -352,7 +360,7 @@ def print_deployment_recap(deployments):
 
 def parse_arguments():
     """Parse argument passed to function"""
-    script_description = ("Script for Deploying Smart Edge using inventory.yml file."
+    script_description = ("Script for deploying Smart Edge using inventory.yml file. "
                           "Deployment is controlled through inventory.yml.\n"
                           "Available deployments:\n")
     script_description += "\n".join([d.name for d in os.scandir(DEPLOYMENTS_PATH) if d.is_dir()])
@@ -360,6 +368,14 @@ def parse_arguments():
         description=script_description, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-f", "--any-errors-fatal", dest="any_errors_fatal", action="store_true",
                         help="Terminate all running actions when any of them fail")
+    parser.add_argument("-c5g", "--clean5g", dest="clean", action="store_true",
+                        help="Run 5G cleanup scripts on clusters. Supported only in 5G "
+                             "Private Wireless Experience Kit. Not supported in Open Developer"
+                             "Experience Kit.")
+    parser.add_argument("-r5g", "--redeploy5g", dest="redeploy", action="store_true",
+                        help="Run 5G re-deployment scripts on clusters. Supported only in 5G "
+                             "Private Wireless Experience Kit. Not supported in Open Developer "
+                             "Experience Kit.")
     return parser.parse_args()
 
 
@@ -392,7 +408,7 @@ def main(args):
 
     prepare_alt_dir_layout()
     for inventory in inventory_handler.get_inventories:
-        deploy_wrapper = run_deployment(inventory)
+        deploy_wrapper = run_deployment(inventory, args.clean, args.redeploy)
         deployment_wrappers.append(deploy_wrapper)
         time.sleep(DEPLOYMENT_INTERVAL)
 

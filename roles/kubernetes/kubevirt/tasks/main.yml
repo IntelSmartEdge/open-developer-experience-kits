@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+
+- name: create namespaces for KubeVirt Operator and CDI
+  include_role:
+    name: kubernetes/custom_namespace
+  vars:
+    - _custom_ns: ["{{ kubevirt_namespace }}", "{{ cdi_namespace }}"]
+
+- name: check if KubeVirt is installed
+  command: kubectl get deployment -n {{ kubevirt_namespace }} virt-operator
+  failed_when: false
+  register: kubevirt_present
+  changed_when: false
+
+- name: Install KubeVirt
+  block:
+    - name: install kubevirt operator
+      include_tasks: install_kubevirt.yml
+    - name: virtctl install
+      include_tasks: install_virtctl.yml
+  when: kubevirt_present.rc != 0
+
+- name: check if cdi is installed
+  command: kubectl get deployment -n {{ cdi_namespace }} cdi-operator
+  failed_when: false
+  register: cdi_present
+  changed_when: false
+
+- name: install CDI
+  include_tasks: install_cdi.yml
+  when: cdi_present.rc != 0
+
+

@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+- name: install dependencies
+  include_role:
+    name: infrastructure/install_dependencies
+
+- name: download git tarball
+  get_url:
+    url: "{{ git_tarball_url }}"
+    dest: "{{ project_dir }}"
+    mode: a=rx,u+w
+    checksum: "{{ git2_checksum }}"
+  retries: "{{ number_of_retries | default(3) }}"
+  delay: " {{ retry_delay | default(3) }}"
+
+- name: unarchive git tarball
+  unarchive:
+    src: "{{ git2_dir }}.tar.gz"
+    dest: "{{ project_dir }}"
+    remote_src: true
+
+- name: make configure
+  make:
+    target: configure
+    chdir: "{{ git2_dir }}"
+
+- name: configure
+  command: ./configure --prefix=/usr/local "{{ '--with-openssl=/usr/local --with-lib=lib64' if local_openssl_instalation else '' }}" 
+  args:
+    chdir: "{{ git2_dir }}"
+  changed_when: true
+
+- name: build
+  become: yes
+  command: make -j
+  args:
+    chdir: "{{ git2_dir }}"
+  changed_when: true
+  
+- name: install
+  become: yes
+  make:
+    target: install
+    chdir: "{{ git2_dir }}"
+  changed_when: true

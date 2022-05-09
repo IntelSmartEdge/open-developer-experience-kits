@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+dpdk_kmods_repo: "http://dpdk.org/git/dpdk-kmods"
+dpdk_kmods_dest: "{{ project_dir }}/kmods"

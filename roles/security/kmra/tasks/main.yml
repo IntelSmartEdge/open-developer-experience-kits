@@ -1,0 +1,87 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2020-2022 Intel Corporation
+---
+- name: Create templates directory
+  file:
+    path: "{{ role_path }}/templates"
+    state: directory
+    mode: u+rwx
+  delegate_to: localhost
+
+- name: Get roles and default values from CEK
+  get_url:
+    url: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: u=rw,g=r,o=r
+  with_items:
+    - {
+      src: "{{ _kmra_raw_url }}/{{ _kmra_charts_branch }}/roles/kmra_install/defaults/main.yml",
+      dest: "{{ role_path }}/vars/kmra_vars.yml"
+      }
+    - {
+      src: "{{ _kmra_raw_url }}/{{ _kmra_charts_branch }}/roles/kmra_install/templates/kmra-apphsm-rbac-cluster-role.yml.j2",
+      dest: "{{ role_path }}/templates/kmra-apphsm-rbac-cluster-role.yml.j2"
+      }
+  delegate_to: localhost
+
+- name: Update sgx_prv_gid in template file
+  replace:
+    path: "{{ role_path }}/templates/kmra-apphsm-values.yaml.j2"
+    regexp: 'sgx_prv_gid:.*'
+    replace: 'sgx_prv_gid: {{ sgx_prv_gid }}'
+  delegate_to: localhost
+
+- name: Create local temp directory for helm charts
+  tempfile:
+    state: directory
+  register: local_temp_dir
+  delegate_to: localhost
+
+- name: Get helm charts cek git repo
+  git:
+    repo: "{{ _kmra_charts_repo }}"
+    dest: "{{ local_temp_dir.path }}/container-experience-kits"
+    version: "{{ _kmra_charts_branch }}"
+  delegate_to: localhost
+
+- name: Create charts directory
+  file:
+    state: directory
+    path: "{{ _kmra_chart_dir }}"
+    mode: u+rwx
+
+- name: Copy helm charts
+  copy:
+    src: "{{ local_temp_dir.path }}/container-experience-kits/roles/kmra_install/charts/kmra-apphsm"
+    dest: "{{ _kmra_chart_dir }}"
+    directory_mode: u+rwx
+    mode: u+rw
+
+- name: Copy deployment and service file to chart folder
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: u=rw,g=r,o=r
+  with_items:
+    - {
+       src: "{{ role_path }}/files/kmra-apphsm-deployment.yml",
+       dest: "{{ _kmra_chart_dir }}/kmra-apphsm/templates/"
+      }
+    - {
+       src: "{{ role_path }}/files/kmra-apphsm-service.yml",
+       dest: "{{ _kmra_chart_dir }}/kmra-apphsm/templates/"
+      }
+
+- name: Install apphsm
+  include: install_apphsm.yml
+  vars:
+    kmra_src_path: "{{ temp_dir.path }}/kmaas-kmra_release_{{ _kmra_version }}/"
+    kmra_chart_path: "{{ local_temp_dir.path }}"
+    kmra_pccs_release_name: pccs
+    kmra_pccs_namespace: pccs
+    cluster_name: kubernetes
+    kmra_pccs_service_port: "{{ sgx_pccs_port }}"
+    kmra_apphsm_upstream_port: "{{ kmra_app_hsm_port }}"
+    kmra_apphsm_image_repo: "{{ _kmra_image_repo }}"
+    kmra_apphsm_image_name: "{{ _kmra_image_name }}"
+    kmra_apphsm_image_tag: "{{ _kmra_image_tag }}"

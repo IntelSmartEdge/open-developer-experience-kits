@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+- name: create directory for operator sources
+  tempfile:
+    state: directory
+    suffix: "-{{ _git_repo_dest_sriov_suf }}"
+  register: _git_repo_dest_sriov
+
+- name: download SRIOV-FEC Operator repo
+  include_role:
+    name: infrastructure/git_repo
+  vars:
+    git_repo_url: "{{ _git_repo_sriov }}"
+    git_repo_dest: "{{ _git_repo_dest_sriov.path }}"
+    git_repo_branch: "{{ sriov_fec_operator_version }}"
+
+- name: add proxy to Dockerfiles
+  replace:
+    path: "{{ item }}"
+    regexp: 'FROM golang:1.16 as builder'
+    replace: 'FROM golang:1.16 as builder\nENV HTTP_PROXY=$http_proxy\nENV HTTPS_PROXY=$http_proxy\nENV http_proxy=$http_proxy\nENV https_proxy=$http_proxy\nENV NO_PROXY=$no_proxy\nENV no_proxy=$no_proxy'
+  loop:
+  - "{{ _git_repo_dest_sriov.path }}/sriov-fec/Dockerfile"
+  - "{{ _git_repo_dest_sriov.path }}/sriov-fec/Dockerfile.daemon"
+  - "{{ _git_repo_dest_sriov.path }}/labeler/Dockerfile"
+  changed_when: true
+
+- name: push after building (sriov-fec/Makefile)
+  replace:
+    path: "{{ _git_repo_dest_sriov.path }}/sriov-fec/Makefile"
+    regexp: 'build_all: image push'
+    replace: 'build_all: image\n\t$(MAKE) push'
+  changed_when: true
+
+- name: force copy to sriov-fec/Makefile
+  replace:
+    path: "{{ _git_repo_dest_sriov.path }}/sriov-fec/Makefile"
+    regexp: 'cp ../LICENSE TEMP_LICENSE_COPY'
+    replace: 'cp -f ../LICENSE TEMP_LICENSE_COPY'
+  changed_when: true
+
+- name: push after building (labeler/Makefile)
+  replace:
+    path: "{{ _git_repo_dest_sriov.path }}/labeler/Makefile"
+    regexp: 'build_all: image \$\(CONTAINER_TOOL\)-push'
+    replace: 'build_all: image\n\t$(MAKE) $(CONTAINER_TOOL)-push'
+  changed_when: true

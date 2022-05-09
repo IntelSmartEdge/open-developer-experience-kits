@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+---
+
+- name: create directory for SRIOV-FEC Operator configuration
+  tempfile:
+    state: directory
+    suffix: "-{{ _git_repo_dest_sriov_suf }}"
+  register: _git_repo_dest_sriov
+  become: true
+
+- name: prepare SRIOV-FEC Operator configuration script
+  template:
+    src: sriov-fec-cluster-config.j2
+    dest: "{{ _git_repo_dest_sriov.path }}/{{ _sriov_fec_cluster_config_filename }}"
+    mode: a=rw
+  changed_when: true
+  become: true
+
+- name: apply SRIOV-FEC Operator configuration
+  command: kubectl apply -f {{ _git_repo_dest_sriov.path }}/{{ _sriov_fec_cluster_config_filename }}
+  changed_when: false
+  register: result
+  retries: 50
+  until: result is succeeded
+  delay: 5
+  become: true

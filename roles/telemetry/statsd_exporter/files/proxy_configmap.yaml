@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.proxy.name }}
+  labels:
+    name: {{ .Values.proxy.name }}
+data:
+  nginx.conf: |-
+    worker_processes  1;
+    pid /tmp/nginx.pid;
+
+    events {
+        worker_connections  1024;
+    }
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen                 {{ .Values.proxy.metricsPort }} ssl;
+            server_name            {{ .Values.proxy.serverName }};
+            ssl_certificate        {{ .Values.proxy.certsDest }}/tls.crt;
+            ssl_certificate_key    {{ .Values.proxy.certsDest }}/tls.key;
+            ssl_client_certificate {{ .Values.proxy.certsDest }}/ca.crt;
+            ssl_protocols          {{ .Values.proxy.protocols }};
+            ssl_ciphers            {{ join ":" .Values.proxy.ciphers }};
+            ssl_verify_client      on;
+
+            location /metrics {
+                proxy_pass http://localhost:{{ .Values.proxy.internalPort }};
+                }
+            }
+    }

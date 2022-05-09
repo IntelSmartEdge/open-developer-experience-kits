@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019-2022 Intel Corporation
+
+---
+- name: load ISecL verification controller variables
+  include_vars: ../../common/defaults/main.yml
+
+- name: check ISecL verification controller services
+  check_k8s_object:
+    name: "{{ item }}"
+    namespace: "{{ isecl_name_space }}"
+    kind: deployment
+  with_items:
+    - cms
+    - aas
+    - hvs
+    - aasdb
+    - hvsdb
+
+- name: check ISecL NATS service status
+  check_k8s_object:
+    name: "nats"
+    namespace: "{{ isecl_name_space }}"
+    kind: statefulset

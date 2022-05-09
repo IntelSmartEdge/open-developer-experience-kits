@@ -6,10 +6,9 @@ namespace: telemetry
 pullPolicy: IfNotPresent
 component: cadvisor
 projectDir: "{{ project_dir }}"
-
 # cAdvisor Values
 cadvisor:
-  image: gcr.io/cadvisor/cadvisor:v0.40.0
+  image: gcr.io/cadvisor/cadvisor:v0.43.0
   name: cadvisor
   resources:
     requests:
@@ -24,7 +23,7 @@ cadvisor:
 
 # Proxy Values
 proxy:
-  metricsCadvisorPort: 9105
+  metricsCadvisorPort: "{{ telemetry_cadvisor_port }}"
   internalCadvisorPort: 9106
   serverName: "{{ _proxy_server_name }}"
   name: cadvisor-proxy
@@ -39,3 +38,7 @@ proxy:
     - "TLS_AES_256_GCM_SHA384"
     - "ECDHE-RSA-AES256-GCM-SHA384"
     - "ECDHE-ECDSA-AES256-GCM-SHA384"
+
+# Service Monitor
+sm:
+  secretName: "{{ telemetry_prometheus_tls_secret_name }}"

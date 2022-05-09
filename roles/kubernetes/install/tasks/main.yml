@@ -40,7 +40,7 @@
     apt_key:
       url: "{{ item }}"
       state: present
-    with_items: "{{ _kubernetes_repository_keys }}"
+    loop: "{{ _kubernetes_repository_keys }}"
   - name: import K8s repository
     apt_repository:
       repo: "{{ _kubernetes_repository_url }}"

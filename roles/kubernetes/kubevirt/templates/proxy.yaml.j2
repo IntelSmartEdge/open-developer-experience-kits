@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021-2022 Intel Corporation
+
+---
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: CDI
+metadata:
+  name: cdi
+spec:
+  config:
+    importProxy:
+      HTTPProxy: "{{ proxy_env.http_proxy }}" 
+      HTTPSProxy: "{{ proxy_env.https_proxy }}"
+      noProxy: "{{ proxy_env.no_proxy }}"

@@ -10,7 +10,7 @@
     kind: deployment
     name: "harbor-app-{{ item }}"
     namespace: "{{ _harbor_namespace }}"
-  with_items:
+  loop:
   - chartmuseum
   - core
   - jobservice
@@ -25,7 +25,7 @@
     kind: statefulset
     name: "harbor-app-{{ item }}"
     namespace: "{{ _harbor_namespace }}"
-  with_items:
+  loop:
   - database
   - redis
   - trivy

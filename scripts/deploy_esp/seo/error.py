@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 """ Error handling related utilities """
 
 import enum
+
+
+TS_REF = "See the Troubleshooting section of the Intel® Smart Edge Open Provisioning Process document"
 
 
 class Codes(enum.Enum):

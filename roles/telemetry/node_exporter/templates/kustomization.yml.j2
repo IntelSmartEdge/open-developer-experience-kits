@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - all.yaml
+
+patchesJson6902:
+  - target:
+      kind: DaemonSet
+      group: apps
+      version: v1
+      name: node-exporter-prometheus-node-exporter
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/livenessProbe/httpGet/scheme
+        value: HTTPS
+      - op: add
+        path: /spec/template/spec/containers/0/readinessProbe/httpGet/scheme
+        value: HTTPS

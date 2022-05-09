@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2019 Intel Corporation
+
+---
+- name: remove custom configuration from gitconfig
+  blockinfile:
+    path: "{{ ansible_env.HOME }}/.gitconfig"
+    state: absent
+    block: |
+      [url "https://{{ git_repo_token }}@github.com/"]
+        insteadOf = https://github.com/

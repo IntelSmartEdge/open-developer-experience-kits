@@ -1,19 +1,26 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2021 Intel Corporation
 --- 
-- name: Copy isecl deployment files and helm charts to working directory
-  copy:
-    src: "{{ role_path }}/files/charts/"
+- name: Check if isecl helm chart dir exists
+  stat:
+    path: "{{ isecl_helm_charts_dir }}"
+  register: isecl_chart_dir
+
+- name: Remove if isecl chart dir exists
+  file:
+    state: absent
+    path: "{{ isecl_helm_charts_dir }}"
+  when: isecl_chart_dir.stat.exists
+
+- name: Get isecl helm charts from git
+  git:
+    repo: "{{ isecl_helm_repo }}"
+    version: "{{ isecl_helm_repo_tag }}"
     dest: "{{ isecl_helm_charts_dir }}"
-    mode: a=rx,u+w
+    force: yes
 
-- name: Generate isecl-k8s.env file
-  template:
-    src: isecl-k8s.env.j2
-    dest: "{{ isecl_env_file }}"
-    mode: a=rx,u+w
-
-- name: Make scripts executable
-  shell:
-    cmd: find {{ isecl_helm_charts_dir }} -type f -iname "*.sh" -exec chmod +x {} \;
+- name: Change permission of setup_nfs.sh
+  file:
+    path: "{{ isecl_helm_charts_dir }}/setup-nfs.sh"
+    mode: a+x
   changed_when: false

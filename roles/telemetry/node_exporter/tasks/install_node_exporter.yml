@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+---
+- name: create temporary directory
+  tempfile:
+    state: directory
+    suffix: node-exporter
+  register: temp_dir
+
+- name: template files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ temp_dir.path }}/{{ item.dest }}"
+    mode: u+rw
+  loop:
+    - {src: node-exporter-cm.yml.j2, dest: node-exporter-cm.yml}
+    - {src: kustomization.yml.j2, dest: kustomization.yaml}
+    - {src: values.yml.j2, dest: overwrite_values.yaml}
+
+- name: request certificates for node-exporter
+  include_role:
+    name: kubernetes/certs
+  vars:
+    tls_secret_name: "{{ _node_exporter_tls_secret }}"
+    desired_namespace: "{{ telemetry_namespace }}"
+    dns_names: ["{{ _node_exporter_tls_name }}"]
+
+- name: apply node-exporter configmap
+  command: kubectl apply -f {{ temp_dir.path }}/node-exporter-cm.yml
+  changed_when: true
+
+- name: template node-exporter
+  command:
+    argv:
+      - helm
+      - template
+      - --values
+      - "{{ temp_dir.path }}/overwrite_values.yaml"
+      - --namespace
+      - "{{ telemetry_namespace }}"
+      - --repo
+      - "{{ _node_exporter_helm_repo.url }}"
+      - --version
+      - "{{ _node_exporter_helm_repo.version }}"
+      - "{{ _node_exporter_release_name }}"
+      - "{{ _node_exporter_helm_repo.name }} "
+  register: template_command
+  changed_when: false
+
+- name: write the output of template to command
+  copy:
+    content: "{{ template_command.stdout }} "
+    dest: "{{ temp_dir.path }}/all.yaml"
+    mode: u+rw
+
+- name: Kustomize and apply templated file
+  command: kubectl apply -k {{ temp_dir.path }}
+  changed_when: true

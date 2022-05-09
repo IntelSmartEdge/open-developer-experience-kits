@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+--- a/values.yaml
++++ b/values.yaml
+@@ -90,6 +90,22 @@ master:
+ 
+ worker:
+   config: ### <NFD-WORKER-CONF-START-DO-NOT-REMOVE>
++    sources:
++      custom:
++      - name: "intel.sgx"
++        labels:
++          intel.sgx: "true"
++        matchFeatures:
++          - feature: cpu.cpuid
++            matchExpressions:
++              SGX: {op: Exists}
++              SGXLC: {op: Exists}
++          - feature: cpu.sgx
++            matchExpressions:
++              enabled: {op: IsTrue}
++          - feature: kernel.config
++            matchExpressions:
++              X86_SGX: {op: Exists}
+     #core:
+     #  labelWhiteList:
+     #  noPublish: false

@@ -21,3 +21,8 @@
   roles:
     - role: security/pccs
       when: pccs_enable | default(False)
+
+- hosts: controller_group
+  roles:
+    - role: security/kmra
+      when: kmra_enable | default(False)

@@ -61,7 +61,7 @@
         src: "{{ item }}.j2"
         dest: "{{ tmp_dir.path }}/{{ item }}"
         mode: preserve
-      with_items:
+      loop:
         - ds-patch.yml
     
     - name: Apply files

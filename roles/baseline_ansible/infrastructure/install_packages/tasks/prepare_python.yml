@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2021-2022 Intel Corporation
 
 ---
 - name: Get python_interpreter
@@ -20,6 +20,15 @@
   when:
     - python_interpreter == 'python3'
 
+- name: Get pip_version
+  set_fact: pip_version="{{ pip3_version if ansible_python.version.major == 3 else pip2_version }}"
+
+- name: Get python_wheel_version
+  set_fact: python_wheel_version="{{ python3_wheel_version if ansible_python.version.major == 3 else python2_wheel_version }}"
+
+- name: Get python_setuptools_version
+  set_fact: python_setuptools_version="{{ python3_setuptools_version if ansible_python.version.major == 3 else python2_setuptools_version }}"
+
 - name: update pip to specified version
   become: yes
   pip:
@@ -27,9 +36,9 @@
     version: "{{ pip_version }}"
 
 - name: upgrade Python wheel and setuptools
-  become: yes
   pip:
     name:
       - "wheel=={{ python_wheel_version }}"
       - "setuptools=={{ python_setuptools_version }}"
-    extra_args: --upgrade
+    state: forcereinstall
+    extra_args: --user

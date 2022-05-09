@@ -8,10 +8,4 @@
     msg: "NFD is only for controller/k8s master host"
   when: "'controller_group' not in group_names"
 
-- block:
-    - include_tasks: nfd.yml
-      when: not sgx_enabled or ansible_os_family == "RedHat"
-
-    - include_tasks: sgx_nfd.yml
-      when: sgx_enabled and ansible_os_family == "Debian"
-  when: "'controller_group' in group_names"
+- include_tasks: nfd.yml

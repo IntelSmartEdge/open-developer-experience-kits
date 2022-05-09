@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022 Intel Corporation
+
+_node_exporter_release_name: node-exporter
+
+_node_exporter_helm_repo:
+  url: https://prometheus-community.github.io/helm-charts
+  name: prometheus-node-exporter
+  version: "2.4.1"
+
+_node_exporter_image_version: v1.3.1
+telemetry_node_exporter_port: 9100
+
+_node_exporter_tls_secret: node-exporter-tls
+_node_exporter_tls_name: node_exporter
+_node_exporter_certificate_mount_path: /opt/node-exporter/certs
+
+_node_exporter_web_configmap_mount_path: /opt/node-exporter
+_node_exporter_web_configmap_name: node-exporter-web-config
