@@ -15,6 +15,19 @@
     isecl_nfs_server: "{{ hostvars[inventory_hostname].ansible_host }}"
   when: install_nfs_server
 
+# Internal IP of cloud(AWS) instance is needed for control-plane services to communicate with NFS
+- name: Update internal ip of cloud instance for verification controller deployment
+  block:
+    - name: Get NFS server internal ip
+      shell: hostname -I | awk '{print $1}'
+      register: nfs_server_internal_ip
+      changed_when: false
+    - name: Update NFS server internal ip in case of verification controller deployment
+      set_fact:
+        isecl_nfs_server: "{{ nfs_server_internal_ip.stdout }}"
+        isecl_control_plane_internal_ip: "{{ nfs_server_internal_ip.stdout }}"
+  when: platform_attestation_controller | default(False)
+
 - name: Create folder structure in NFS directory
   command: "./setup-nfs.sh {{ isecl_nfs_server_dir }} {{ isecl_user_id }} {{ isecl_nfs_server }}"
   args:

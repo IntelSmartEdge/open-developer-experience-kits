@@ -17,7 +17,7 @@ aas-manager:
   image:
     name: isecl/aas-manager # Authentication & Authorization Manager image name<br> (**REQUIRED**)
   aas:
-    url: https://{{ isecl_control_plane_ip }}:30444/aas/v1/ # AAS Base url
+    url: https://{{ isecl_control_plane_internal_ip }}:30444/aas/v1/ # AAS Base url
   hostAliasEnabled: false # Set this to true for using host aliases and also add entries accordingly in ip, hostname entries. hostalias is required when ingress is deployed and pods are not able to resolve the domain names
   secret:
     superAdminUsername: {{ isecl_users_super_admin_username }}
@@ -61,7 +61,7 @@ global:
     dbhostSSLPodRange: 10.1.0.0/8 # PostgreSQL DB Host Address(IP address/subnet-mask). IP range varies for different k8s network plugins(Ex: Flannel - 10.1.0.0/8 (default), Calico - 192.168.0.0/16).
     nats:
       enabled: true # Enable/Disable NATS mode<br> (Allowed values: `true`\`false`)
-      servers: "nats://{{ isecl_control_plane_ip }}:30222"   # NATS Server IP/Hostname<br> (**REQUIRED IF ENABLED**) e.g nats://192.1.2.4:30222
+      servers: "nats://nats.isecl.svc.cluster.local:4222"   # NATS Server IP/Hostname<br> (**REQUIRED IF ENABLED**) e.g nats://192.1.2.4:30222
 
   storage:
     nfs:

@@ -4,6 +4,6 @@
 ---
 - name: install hwe-kernel packages
   package:
-    name: linux-generic-hwe-20.04-edge
+    name: linux-generic-hwe-20.04
     install_recommends: true
   become: yes

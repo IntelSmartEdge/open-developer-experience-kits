@@ -48,6 +48,11 @@
     chdir: "{{ isecl_helm_charts_dir }}"
   changed_when: false
 
+- name: Run modprobe on model specific register
+  command: modprobe msr
+  become: true
+  changed_when: false
+
 - name: Deploy isecl data plane services
   command: "helm install twp-csp usecases/twp-cloud-service-provider/ -n {{ isecl_name_space }} --create-namespace"
   args:
