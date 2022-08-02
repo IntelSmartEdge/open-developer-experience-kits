@@ -3,3 +3,5 @@
 
 ---
 driver_download_timeout: 60
+
+unload_driver_name: irdma

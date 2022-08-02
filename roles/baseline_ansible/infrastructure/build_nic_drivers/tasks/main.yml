@@ -52,6 +52,19 @@
       until: downloaded_driver is not failed
       retries: "{{ number_of_retries | default(5) }}"
 
+    - name: get driver lsmod output
+      shell: set -o pipefail && lsmod | grep {{ driver_name }}
+      register: lsmod_driver
+      changed_when: false
+      failed_when: false
+
+    - name: unload {{ unload_driver_name }} module
+      modprobe:
+        name: "{{ unload_driver_name }}"
+        state: absent
+      become: yes
+      when: unload_driver_name in lsmod_driver.stdout
+
     - name: unload {{ driver_name }} module
       modprobe:
         name: "{{ driver_name }}"

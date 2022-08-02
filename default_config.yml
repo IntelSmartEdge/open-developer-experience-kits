@@ -77,7 +77,7 @@ profiles:
     url: https://github.com/smart-edge-open/profiles.git
 
     # Branch to be checked out
-    branch: smart-edge-open-22.03.01
+    branch: smart-edge-open-22.03.02
 
     # Profile scenario
     # Possible values: single-node, multi-node
@@ -88,7 +88,7 @@ profiles:
       # Address of the Experience Kit repository
       url: https://github.com/smart-edge-open/open-developer-experience-kits.git
       # Branch to be checked out
-      branch: smart-edge-open-22.03.01
+      branch: smart-edge-open-22.03.02
       # Deployment to be performed
       # Possible values: dek
       deployment: dek

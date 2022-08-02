@@ -9,7 +9,7 @@
         - "install_hwe_kernel_enable | default(False)"
 
     - name: get mainline kernel version
-      shell: set -o pipefail && dpkg --list | grep linux-image-5.13 | awk '{print $2}' | cut -f3-5 -d "-"
+      shell: set -o pipefail && dpkg --list | grep linux-image-5.15 | awk '{print $2}' | cut -f3-5 -d "-"
       args:
         warn: false
       register: hwe_kernel_version

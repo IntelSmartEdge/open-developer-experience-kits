@@ -3,12 +3,12 @@
 
 ---
 
-_ice_url: "https://downloadmirror.intel.com/709704/ice-1.7.16.tar.gz"
-_iavf_url: "https://downloadmirror.intel.com/24693/eng/iavf-4.2.7.tar.gz"
-_ice_ver: "1.7.16"
-_iavf_ver: "4.2.7"
-_ice_chksm: "md5:ee6880350a799f0337914c33f1b5c8c0"
-_iavf_chksm: "md5:95052de96ae2084922ef681e30f18e22"
+_ice_url: "https://downloadmirror.intel.com/734404/ice-1.8.9.tar.gz"
+_iavf_url: "https://downloadmirror.intel.com/729617/iavf-4.4.2.1.tar.gz"
+_ice_ver: "1.8.9"
+_iavf_ver: "4.4.2.1"
+_ice_chksm: "md5:fbb148b503ebe09c55dffeaf90e393ea"
+_iavf_chksm: "md5:91fb3a663b5175065790add1b20e4f3a"
 _ice_name: "ice"
 _iavf_name: "iavf"
 _mgmt_driver: "tg3"
