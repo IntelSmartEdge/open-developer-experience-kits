@@ -2,12 +2,12 @@
 # Copyright (c) 2019-2022 Intel Corporation
 
 ---
-_nfd_image_name: "k8s.gcr.io/nfd/node-feature-discovery"
+_nfd_image_name: "registry.cn-shanghai.aliyuncs.com/joez/node-feature-discovery"
 _nfd_tag: "v0.10.1"
 
 _nfd_chart_dir: "{{ ne_helm_charts_default_dir }}/node-feature-discovery"
 _nfd_chart_url:
-  "https://raw.githubusercontent.com/kubernetes-sigs/\
+  "https://ghps.cc/https://raw.githubusercontent.com/kubernetes-sigs/\
   node-feature-discovery/{{ _nfd_tag }}/deployment/helm/node-feature-discovery"
 
 _nfd_release_name: "nfd-release"
