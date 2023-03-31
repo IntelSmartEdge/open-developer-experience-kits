@@ -23,3 +23,14 @@
   become: yes
   when:
     - ansible_distribution == "CentOS"
+
+- name: add EPEL repository for openEuler
+  ansible.builtin.yum_repository:
+    name: epel
+    description: EPEL
+    baseurl: https://dl.fedoraproject.org/pub/epel/8/Everything/$basearch/
+    gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-8
+    enabled: true
+  become: yes
+  when:
+    - ansible_distribution == "openEuler"

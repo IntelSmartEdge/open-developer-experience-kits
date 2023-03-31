@@ -31,6 +31,7 @@
   when:
     - ansible_distribution_version < '8'
     - ius_repository_enabled
+    - ansible_distribution != 'openEuler'
 
 - name: Install PowerTools repository
   include_tasks: redhat_powertools_repository.yml
@@ -46,6 +47,8 @@
   command: cat /etc/redhat-release
   register: release
   changed_when: false
+  when:
+    - ansible_distribution != 'openEuler'
 
 - name: set full distribution version RHEL
   set_fact:

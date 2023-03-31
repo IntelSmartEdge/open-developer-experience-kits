@@ -20,4 +20,4 @@
   # where every element has the value "enabled" or "disabled"
   loop: "{{ (fw_open_ports | default([]) | zip_longest([], fillvalue='enabled') | list) + (fw_close_ports | default([]) | zip_longest([], fillvalue='disabled') | list) }}" # noqa line-length
   become: yes
-  when: ansible_os_family == 'RedHat'
+  when: ansible_os_family == 'RedHat' and ansible_distribution != 'openEuler'

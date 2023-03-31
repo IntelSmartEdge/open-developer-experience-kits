@@ -22,7 +22,9 @@
 - name: add proxy to already existing config.json
   block:
     - name: add proxy to already existing config.json
-      shell: "jq -s '.[0] + .[1]' .docker/config.json .docker/temp-proxy.json | sponge .docker/config.json"
+      shell: "jq -s '.[0] + .[1]' .docker/config.json .docker/temp-proxy.json > .docker/merged-config.json"
+    - name: rename merged config.json
+      shell: "mv .docker/merged-config.json .docker/config.json"
     - name: remove temporary .docker/temp-proxy.json
       file:
         path: .docker/temp-proxy.json

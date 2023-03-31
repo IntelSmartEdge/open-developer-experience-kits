@@ -12,6 +12,11 @@
 
 - name: install docker
   include_tasks: install.yml
+  when: ansible_distribution != "openEuler"
+
+- name: install docker
+  include_tasks: install_openEuler.yml
+  when: ansible_distribution == "openEuler"
 
 - name: mange docker group
   include_tasks: manage_group.yml
@@ -21,6 +26,7 @@
 
 - name: install pip dependencies
   include_tasks: install_pip_dep.yml
+  when: ansible_distribution != "openEuler"
 
 - name: set up proxy
   include_tasks: proxy.yml
@@ -49,3 +55,4 @@
 
 - name: set audit rules for docker
   include_tasks: audit.yml
+  when: ansible_distribution != "openEuler"
