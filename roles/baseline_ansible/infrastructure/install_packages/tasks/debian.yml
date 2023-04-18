@@ -25,6 +25,7 @@
   become: yes
   command: systemd-run --property="After=apt-daily.service apt-daily-upgrade.service" --wait /bin/true
   changed_when: false
+  tags: never
 
 - name: ensure that main, restricted, universe and multiverse repositories are enabled
   # Block was added as a solution to a problem with incorrectly added packages/repositories on an installed machine. 
@@ -56,3 +57,4 @@
   - name: fail run apt update
     fail:
       msg: "{{ error_output }}"
+  tags: never

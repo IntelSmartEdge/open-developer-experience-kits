@@ -2,11 +2,13 @@
 # Copyright (c) 2021 Intel Corporation
 ---
 - name: download helm-harbor repo
-  git:
-    repo: "{{ _git_repo_harbor }}"
-    dest: "{{ _git_repo_dest_harbor }}"
-    version: "{{ _harbor_helm_tag }}"
-    update: false
+  get_url:
+    url: "{{ offline_file_server }}/harbor.tar.gz"
+    dest: "{{ project_dir }}"
+
+- name: extract downloaded harbor chart tar ball
+  shell:
+    cmd: cd "{{ project_dir }}" && tar -zxvf harbor.tar.gz && cd -
 
 - name: generate admin password
   set_fact:

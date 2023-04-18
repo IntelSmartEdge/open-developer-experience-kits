@@ -29,7 +29,7 @@
 
 - name: download calico yml
   get_url:
-    url: "{{ _calico_url }}"
+    url: "{{ offline_file_server }}/calico.yaml"
     dest: "{{ tmp_dir.path }}/calico.yml"
   register: result
   retries: "{{ number_of_retries }}"

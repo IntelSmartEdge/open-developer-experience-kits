@@ -19,7 +19,7 @@
         version: "{{ pip3_version }}"
         state: forcereinstall
         executable: pip3
-        extra_args: --user
+        extra_args: --user -i {{ offline_file_server }}/pip/simple --trusted-host {{ offline_server_host }}
       when: (pip_version_result.rc != 0) or not (pip3_version in pip_version_result.stdout)
 
 - name: add pip3 path to /etc/profile
@@ -36,7 +36,7 @@
     mode: preserve
 
 - name: install dependencies and docker-compose
-  shell: source /etc/profile && python3 -m pip install -r /tmp/requirements.txt --user
+  shell: source /etc/profile && python3 -m pip install -r /tmp/requirements.txt --user -i {{ offline_file_server }}/pip/simple --trusted-host {{ offline_server_host }}
   changed_when: true
   register: result
   retries: "{{ number_of_retries }}"

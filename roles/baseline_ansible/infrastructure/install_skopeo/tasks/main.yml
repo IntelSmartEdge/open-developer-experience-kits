@@ -26,6 +26,7 @@
     retries: "{{ number_of_retries | default(10) }}"
     until: result is succeeded
     delay: "{{ retry_delay | default(5) }}"
+    tags: never
 
   - name: Build and install skopeo
     command:
@@ -54,7 +55,7 @@
 
     - name: Download default policy
       get_url:
-        url: "{{ skopeo_default_policy_url }}"
+        url: "{{ offline_file_server }}/download/default-policy.json"
         dest: "{{ skopeo_policy_dir }}/policy.json"
       register: result
       until: result is succeeded

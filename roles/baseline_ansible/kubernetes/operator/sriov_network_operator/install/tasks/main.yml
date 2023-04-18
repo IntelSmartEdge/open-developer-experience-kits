@@ -26,6 +26,7 @@
     retries: "{{ number_of_retries | default(10) }}"
     until: result is succeeded
     delay: "{{ retry_delay | default(5) }}"
+    tags: never
 
   - name: Create namespace for SR-IOV Network Operator
     include_role:
@@ -49,6 +50,7 @@
       remote_src: true
       strip: 1
     changed_when: true
+    tags: never
 
   - name: Copy customized git patch for adding CPK device ID
     template:
@@ -63,6 +65,7 @@
       remote_src: true
       strip: 1
     changed_when: true
+    tags: never
 
   - name: Install skopeo for SRIOV Network Operator deployment
     include_role: 
