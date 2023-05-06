@@ -19,7 +19,7 @@
 - name: install os packages
   block:
     - name: install os packages
-      action: "{{ ansible_pkg_mgr }} name={{ install_dependencies_full_list }} state=present update_cache=yes"
+      action: "{{ ansible_pkg_mgr }} disable_excludes=main name={{ install_dependencies_full_list }} state=present update_cache=yes"
       register: pkg_mgr_results
       retries: "{{ number_of_retries | default(3) }}"
       until: pkg_mgr_results is success

@@ -91,3 +91,20 @@
   when:
     - ansible_distribution == "RedHat"
     - ansible_distribution_version >= '8'
+
+- name: pull matching kernel headers and devel on openEuler
+  become: yes
+  package:
+    name: "{{ item }}"
+    state: present
+    allow_downgrade: true
+    disable_excludes: main
+  retries: "{{ number_of_retries | default(5) }}"
+  delay: "{{ retry_delay | default(3) }}"
+  register: source_status
+  until: source_status is not failed
+  loop:
+    - "kernel-headers"
+    - "kernel-devel"
+  when:
+    - ansible_distribution == "openEuler"

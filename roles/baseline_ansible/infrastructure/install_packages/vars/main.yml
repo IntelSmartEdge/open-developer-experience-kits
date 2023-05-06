@@ -4,8 +4,10 @@
 ---
 os_base_packages:
   RedHat:
+    - CentOS:
+      - yum-utils
+      - moreutils
     - curl
-    - yum-utils
     - device-mapper-persistent-data
     - lvm2
     - wget
@@ -29,7 +31,6 @@ os_base_packages:
     - gcc-c++
     - psmisc
     - pixman-devel
-    - moreutils
     - createrepo
     - sshpass
     - bash-completion
@@ -111,8 +112,9 @@ os_python_packages:
 
 hardware_details_tools:
   RedHat:
+    - CentOS:
+      - inxi
     - hwinfo
-    - inxi
     - jq
     - pciutils
   Debian:
