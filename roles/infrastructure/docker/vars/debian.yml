@@ -4,8 +4,8 @@
 ---
 
 _docker_os_dependencies: "apt-transport-https,ca-certificates,curl,gnupg-agent,software-properties-common,moreutils,jq,auditd,python3-pip"
-# version string specific for Ubuntu 20.04
-_docker_package_version: "5:{{ _docker_version }}~3-0~ubuntu-focal"
+# version string specific for Ubuntu 22.04
+_docker_package_version: "5:{{ _docker_version }}~3-0~ubuntu-jammy"
 _docker_packages:
   - "docker-ce={{ _docker_package_version }}"
   - "docker-ce-cli={{ _docker_package_version }}"

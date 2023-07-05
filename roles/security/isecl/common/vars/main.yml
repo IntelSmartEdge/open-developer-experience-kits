@@ -13,10 +13,9 @@ install_dependencies:
     - unzip
     - make
     - cabextract
-    - g++-8
     - build-essential
     - tpm-udev
-    - libtss2-esys0
+    - libtss2-esys-3.0.2-0
     - init-system-helpers
     - libgcrypt20-dev
     - libtss2-dev

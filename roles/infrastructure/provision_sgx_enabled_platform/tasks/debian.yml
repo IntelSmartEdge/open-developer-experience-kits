@@ -17,7 +17,7 @@
   block:
     - name: remove repo related files
       apt_repository:
-        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main
+        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu jammy main
         state: absent
       become: yes
 
@@ -28,7 +28,7 @@
 
     - name: add SGX repository
       apt_repository:
-        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu focal main
+        repo: deb [arch=amd64] https://download.01.org/intel-sgx/sgx_repo/ubuntu jammy main
       become: yes
   when: sgx_repo.stat.exists == false
 
