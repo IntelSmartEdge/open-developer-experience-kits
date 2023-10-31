@@ -3,7 +3,7 @@
 ---
 golang_version: 1.16
 golang_download_name: "go{{ golang_version }}.linux-amd64.tar.gz"
-golang_download_url_base: "https://golang.google.cn/dl/"
+golang_download_url_base: "https://dl.google.com/go/"
 golang_download_url: "{{ golang_download_url_base }}{{ golang_download_name }}"
 golang_download_dest: "{{ project_dir }}/golang/{{ golang_download_name }}"
 golang_download_checksum: "sha256:013a489ebb3e24ef3d915abe5b94c3286c070dfe0818d5bca8108f1d6e8440d2"
@@ -13,5 +13,9 @@ golang_default_exports: [
   "export GOPATH=~/go",
   "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
 ]
+
+# override these two variables here to avoid patch conflict
+golang_download_url_base: "https://golang.google.cn/dl/"
+golang_download_url: "{{ golang_download_url_base }}{{ golang_download_name }}"
 
 golang_additional_exports: []
