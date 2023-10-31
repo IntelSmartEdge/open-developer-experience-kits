@@ -45,3 +45,6 @@
     mode: a=rx,u+w
   become: yes
   loop: "{{ golang_default_exports + golang_additional_exports }}"
+
+- name: set goproxy for PRC
+  shell: "source /etc/profile && go env -w GO111MODULE=on && go env -w GOPROXY=https://mirrors.aliyun.com/goproxy/,direct"

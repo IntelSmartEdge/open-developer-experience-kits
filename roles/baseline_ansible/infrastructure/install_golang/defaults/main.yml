@@ -14,4 +14,8 @@ golang_default_exports: [
   "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH"
 ]
 
+# override these two variables here to avoid patch conflict
+golang_download_url_base: "https://golang.google.cn/dl/"
+golang_download_url: "{{ golang_download_url_base }}{{ golang_download_name }}"
+
 golang_additional_exports: []

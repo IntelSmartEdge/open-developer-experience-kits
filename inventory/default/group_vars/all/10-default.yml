@@ -281,7 +281,7 @@ telemetry_statsd_exporter_tcp_port: 8125
 telemetry_cadvisor_enable: true
 
 # Telegraf
-telemetry_telegraf_enable: true
+telemetry_telegraf_enable: false
 telemetry_telegraf_port: 9105
 ###############
 

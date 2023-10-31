@@ -20,3 +20,6 @@
     name: infrastructure/install_dependencies
   vars:
     install_dependencies: "{{ hardware_details_tools }}"
+
+- name: set gitconfig to speed github access in PRC
+  shell: git config --global url."https://gitclone.com/github.com/".insteadOf https://github.com/
