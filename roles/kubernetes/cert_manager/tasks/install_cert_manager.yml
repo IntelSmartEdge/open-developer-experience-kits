@@ -22,7 +22,7 @@
       - helm
       - install
       - --repo
-      - "{{ _cert_manager_chart_repo_url }}"
+      - "{{ offline_chart_server }}"
       - --namespace
       - "{{ _cert_manager_namespace }}"
       - --create-namespace

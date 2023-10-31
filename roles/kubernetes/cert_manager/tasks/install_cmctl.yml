@@ -9,7 +9,7 @@
 
 - name: Download cmctl binary
   get_url:
-    url: "{{ _cmctl_url }}"
+    url: "{{ offline_file_server }}/cmctl-linux-amd64.tar.gz"
     dest: "{{ tempdir.path }}/cmctl.tar.gz"
     mode: u+rwx
   register: result

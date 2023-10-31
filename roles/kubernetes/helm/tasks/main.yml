@@ -30,7 +30,7 @@
     register: helm_tmp_dir
   - name: download
     get_url:
-      url: "{{ _helm_download_url + '/' + _helm_download_item }}"
+      url: "{{ offline_file_server }}/helm-v3.8.0-linux-amd64.tar.gz"
       dest: "{{ helm_tmp_dir.path }}/{{ _helm_download_item }}"
     register: helm_download_result
     retries: "{{ number_of_retries }}"

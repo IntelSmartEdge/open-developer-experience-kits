@@ -22,28 +22,25 @@
         name: "{{ _multus_image_name }}"
         tag: "{{ _multus_image_tag }}"
         source: pull
+      tags: never
 
     - name: tag multus image and push to Harbor registry
-      docker_image:
-        name: "{{ _multus_image_name }}"
-        repository: "{{ _registry_ip_address }}:{{ _registry_port }}/intel/multus"
-        tag: "{{ _multus_image_tag }}"
-        push: true
-        source: local
+      shell:
+        cmd: |
+          docker tag "{{ _multus_image_name }}:{{ _multus_image_tag }}" "{{ _registry_ip_address }}:{{ _registry_port }}/intel/multus:{{ _multus_image_tag }}"
+          docker push "{{ _registry_ip_address }}:{{ _registry_port }}/intel/multus:{{ _multus_image_tag }}"
       register: result
       retries: "{{ harbor_timeout_min }}"
       until: result is succeeded
       delay: 60
 
     - name: remove local image
-      docker_image:
-        state: absent
-        name: "{{ _multus_image_name }}"
-        tag: "{{ _multus_image_tag }}"
+      shell:
+        cmd: docker rmi -f "{{ _multus_image_name }}:{{ _multus_image_tag }}"
     
     - name: download multus deployment file
       get_url:
-        url: "{{ _multus_cni_url }}/multus-daemonset-crio.yml"
+        url: "{{ offline_file_server }}/multus-daemonset-crio.yml"
         dest: "{{ tmp_dir.path }}/multus-daemonset-crio.yml"
       register: result
       retries: "{{ number_of_retries }}"

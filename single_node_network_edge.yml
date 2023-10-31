@@ -61,6 +61,15 @@
 
     - role: infrastructure/docker
 
+  tasks:
+    - name: import container images
+      shell: |
+        mkdir -p {{ project_dir }} && cd $_
+        if [ ! -e ".image-imported" ]; then
+          curl -sL {{ offline_file_server }}/images.tar.gz | tar xz && ./image load && touch .image-imported
+          rm -rf image{,s}
+        fi
+
 - hosts: controller_group
   pre_tasks:
     - name: set node name

@@ -20,6 +20,18 @@
     repo: "{{ _observability_telegraf_git_url }}"
     dest: "{{ tmp_dir.path }}"
     version: "{{ _observability_telegraf_version }}"
+  tags: never
+
+- name: download telegraf  repo
+  get_url:
+    url: "{{ _observability_telegraf_git_url }}"
+    dest: "{{ tmp_dir.path }}"
+  tags: never
+
+- name: extract download telegraf tar ball
+  shell:
+    cmd: cd "{{ tmp_dir.path }}" && tar -zxvf telegraf.tar.gz && cd -
+  tags: never
 
 - name: overwrite Dockerfile files
   copy:
@@ -27,6 +39,7 @@
     dest: "{{ tmp_dir.path }}/images/telegraf/Dockerfile"
     mode: u+rw
     force: yes
+  tags: never
 
 - name: Change permissions on cloned files
   file:
@@ -34,6 +47,7 @@
     mode: a+rx,u+w
     recurse: yes
     state: directory
+  tags: never
 
 - name: build container
   docker_image:
@@ -48,6 +62,7 @@
         TELEGRAF_TAG: "{{ _telegraf_tag }}"
       path: "{{ tmp_dir.path }}"
     push: yes
+  tags: never
 
 - name: create destination directory
   file:

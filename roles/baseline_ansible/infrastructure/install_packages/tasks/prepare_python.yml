@@ -20,6 +20,11 @@
   when:
     - python_interpreter == 'python3'
 
+- name: configure default index for pip
+  shell: |
+    pip config set global.index-url {{ offline_file_server }}/pip/simple
+    pip config set global.trusted-host {{ offline_server_host }}
+
 - name: Get pip_version
   set_fact: pip_version="{{ pip3_version if ansible_python.version.major == 3 else pip2_version }}"
 
@@ -34,6 +39,7 @@
   pip:
     name: pip
     version: "{{ pip_version }}"
+    extra_args: -i {{ offline_file_server }}/pip/simple --trusted-host {{ offline_server_host }}
 
 - name: upgrade Python wheel and setuptools
   pip:
@@ -41,4 +47,4 @@
       - "wheel=={{ python_wheel_version }}"
       - "setuptools=={{ python_setuptools_version }}"
     state: forcereinstall
-    extra_args: --user
+    extra_args: --user -i {{ offline_file_server }}/pip/simple --trusted-host {{ offline_server_host }}

@@ -30,7 +30,7 @@
   block:
     - name: download Docker CLI bash completion
       get_url:
-        url: "{{ _docker_completion_url }}"
+        url: "{{ offline_file_server }}/docker/docker"
         dest: "/etc/bash_completion.d"
       become: yes
       register: result
@@ -39,7 +39,7 @@
       delay: "{{ retry_delay }}"
     - name: download Docker Compose bash completion
       get_url:
-        url: "{{ _docker_compose_completion_url }}"
+        url: "{{ offline_file_server }}/docker/docker-compose"
         dest: "/etc/bash_completion.d"
       become: yes
       register: result

@@ -21,7 +21,7 @@
   pip:
     name: "{{ install_python_dependencies_full_list }}"
     state: present
-    extra_args: --ignore-installed --user
+    extra_args: --ignore-installed --user -i {{ offline_file_server }}/pip/simple --trusted-host {{ offline_server_host }}
   register: pip_result
   retries: "{{ number_of_retries | default(3) }}"
   until: pip_result is succeeded

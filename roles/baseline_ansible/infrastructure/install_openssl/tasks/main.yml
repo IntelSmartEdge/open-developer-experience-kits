@@ -29,7 +29,7 @@
 
   - name: "OpenSSL download from {{ openssl_download_url }}"
     get_url:
-      url: "{{ openssl_download_url }}"
+      url: "{{ offline_file_server }}/download/openssl-1.1.1m.tar.gz"
       dest: "{{ openssl_project_dir }}"
       checksum: "{{ openssl_checksum }}"
       owner: "{{ project_user }}"

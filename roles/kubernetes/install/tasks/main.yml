@@ -33,6 +33,7 @@
   become: yes
   when:
     - ansible_os_family == "RedHat"
+  tags: never
 
 - name: setup Debian K8s repository
   block:
@@ -52,6 +53,7 @@
   become: yes
   when:
     - ansible_os_family == "Debian"
+  tags: never
 
 - name: install packages
   package:
@@ -67,6 +69,11 @@
   delay: 10
   notify:
     - enable and restart kubelet
+  tags: never
+
+- name: install packages for ubnutu offline deployment
+  shell:
+    cmd: sudo apt update && sudo apt install -y kubeadm kubectl kubelet
 
 - name: set up proxy
   include_tasks: proxy.yml

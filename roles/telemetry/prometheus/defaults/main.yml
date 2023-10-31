@@ -8,7 +8,7 @@ _pv_name: prometheus-volume
 _prometheus_release_name: prometheus
 _prometheus_image_version: v2.32.1
 _prometheus_helm_repo:
-  url: https://prometheus-community.github.io/helm-charts
+  url: "{{ offline_chart_server }}"
   version: "33.1.0"
   name: kube-prometheus-stack
 
