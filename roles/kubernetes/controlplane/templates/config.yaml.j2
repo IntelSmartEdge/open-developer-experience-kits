@@ -4,6 +4,7 @@
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: v{{ _kubernetes_version }}
+imageRepository: registry.aliyuncs.com/google_containers
 controllerManager:
   extraArgs:
     terminated-pod-gc-threshold: "600"
