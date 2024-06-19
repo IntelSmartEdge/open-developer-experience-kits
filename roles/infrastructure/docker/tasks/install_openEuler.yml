@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2021 Intel Corporation
+
+---
+
+- name: add Docker repository
+  yum_repository:
+    name: docker
+    description: Docker CE repository
+    baseurl: "https://download.docker.com/linux/centos/8/$basearch/stable"
+    gpgkey: "{{ _docker_repository_key }}"
+    gpgcheck: true
+  become: yes
+  register: result
+  retries: "{{ number_of_retries }}"
+  until: result is succeeded
+  delay: "{{ retry_delay }}"
+
+- name: install Docker CE
+  package:
+    name: "docker-ce-19.03.15-3.el8"
+    state: present
+  notify:
+    - enable and start docker service
+  become: yes
+
+- name: install docker python package
+  pip:
+    name: docker
+    version: "6.1.0"
+    state: present

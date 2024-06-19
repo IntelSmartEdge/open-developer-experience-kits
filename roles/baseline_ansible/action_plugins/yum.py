@@ -40,7 +40,7 @@ class ActionModule(ActionBase):
         # Add/Change ansible_python_interpreter to python2 for CentOS 7.x and RHEL 7.x
         # pylint: disable=f-string-without-interpolation
         is_redhat_family_7 = \
-            self._templar.template("{{ (ansible_os_family == 'RedHat' and "
+            self._templar.template("{{ (ansible_os_family == 'RedHat'and ansible_distribution != 'openEuler' and "
                                    "ansible_distribution_version < '8') | bool }}")
         if is_redhat_family_7:
             if 'ansible_python_interpreter' in task_vars:
