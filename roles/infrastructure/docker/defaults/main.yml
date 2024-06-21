@@ -29,5 +29,5 @@ _docker_audit_files:
 - "/usr/bin/docker-containerd"
 - "/usr/bin/docker-runc"
 
-_docker_completion_url: "https://raw.githubusercontent.com/docker/cli/v{{ _docker_version }}/contrib/completion/bash/docker"
-_docker_compose_completion_url: "https://raw.githubusercontent.com/docker/compose/{{ _docker_compose_version }}/contrib/completion/bash/docker-compose"
+_docker_completion_url: "https://ghps.cc/https://raw.githubusercontent.com/docker/cli/v{{ _docker_version }}/contrib/completion/bash/docker"
+_docker_compose_completion_url: "https://ghps.cc/https://raw.githubusercontent.com/docker/compose/{{ _docker_compose_version }}/contrib/completion/bash/docker-compose"
