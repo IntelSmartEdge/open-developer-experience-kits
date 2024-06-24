@@ -6,7 +6,7 @@ _pv_dir: "{{ _persistent_volumes_dest }}/grafana"
 _pv_name: grafana-volume
 
 _grafana_helm_repo:
-  url: https://grafana.github.io/helm-charts
+  url: "{{ offline_chart_server }}"
   version: "6.24.0"
   name: grafana
 

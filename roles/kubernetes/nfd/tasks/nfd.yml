@@ -19,10 +19,11 @@
       retries: "{{ number_of_retries }}"
       until: result is succeeded
       delay: "{{ retry_delay }}"
+      tags: never
 
     - name: tag NFD image and push to Harbor registry
       docker_image:
-        name: "{{ _nfd_image_name }}"
+        name: "k8s.gcr.io/nfd/node-feature-discovery"
         repository: "{{ _registry_ip_address }}:{{ _registry_port }}/intel/node-feature-discovery"
         tag: "{{ _nfd_tag }}"
         push: true
@@ -35,7 +36,7 @@
     - name: remove local NFD image
       docker_image:
         state: absent
-        name: "{{ _nfd_image_name }}"
+        name: "k8s.gcr.io/nfd/node-feature-discovery"
         tag: "{{ _nfd_tag }}"
 
     - name: create NFD chart template directory
@@ -50,7 +51,7 @@
 
     - name: download NFD chart
       get_url:
-        url: "{{ _nfd_chart_url }}/{{ item }}"
+        url: "{{ offline_file_server }}/node-feature-discovery/{{ item }}"
         dest: "{{ _nfd_chart_dir }}"
       register: result
       retries: "{{ number_of_retries }}"
@@ -60,7 +61,7 @@
 
     - name: download NFD chart templates
       get_url:
-        url: "{{ _nfd_chart_url }}/{{ item }}"
+        url: "{{ offline_file_server }}/node-feature-discovery/{{ item }}"
         dest: "{{ _nfd_chart_dir }}/templates"
       register: result
       retries: "{{ number_of_retries }}"

@@ -20,7 +20,7 @@
 
 - name: download golang
   get_url:
-    url: "{{ golang_download_url }}"
+    url: "{{ offline_file_server }}/download/{{ golang_download_name }}"
     dest: "{{ golang_download_dest }}"
     checksum: "{{ golang_download_checksum }}"
   register: golang_download

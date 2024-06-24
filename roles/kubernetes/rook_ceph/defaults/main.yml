@@ -7,10 +7,10 @@ _rook_ceph_files_dir: "{{ _rook_ceph_main_dir }}/files"
 
 _rook_ceph_version_tag: "v1.7.10"
 
-_crds_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/crds.yaml"
-_common_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/common.yaml"
-_operator_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/operator.yaml"
-_toolbox_url: "https://raw.githubusercontent.com/rook/rook/{{ _rook_ceph_version_tag }}/cluster/examples/kubernetes/ceph/toolbox.yaml"
+_crds_url: "{{ offline_file_server }}/ceph/crds.yaml"
+_common_url: "{{ offline_file_server }}/ceph/common.yaml"
+_operator_url: "{{ offline_file_server }}/ceph/operator.yaml"
+_toolbox_url: "{{ offline_file_server }}/ceph/toolbox.yaml"
 
 rook_ceph_namespace: "rook-ceph"
 
