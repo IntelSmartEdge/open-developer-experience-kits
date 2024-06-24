@@ -5,7 +5,7 @@
 ## URLs to docker images saved with `docker save <image>:<ver> | gzip > <image>.tar.gz` that are going to be preloaded after docker setup
 docker_images: []
 
-_docker_version: "20.10.12"
+_docker_version: "20.10.13"
 _docker_packages:
   - "docker-ce-{{ _docker_version }}"
   - "docker-ce-cli-{{ _docker_version }}"
